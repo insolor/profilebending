@@ -137,91 +137,97 @@ def dxf_draw_profile(d, N, M, profile, **common):
         d.append(sdxf.Line(points=[(x, item['H']),(x1, item['H'])], **common))
         x = x1
 
-print('Введите длины участков b0-b5:')
-b = [0 for i in range(6)]
-for i in range(6):
-    b[i] = input_float('b%d = ' % i,
-                       cond=lambda x: x>=0,
-                       msg_on_false_cond='Длина участка не может быть отрицательной.')
 
-N = int(input_float('Введите количество волн N = ',
-                    cond=lambda x: x>0 and x<1000 and int(x)==x,
-                    msg_on_false_cond='Количество волн должно быть целым числом больше нуля.'))
+def main()
+    print('Введите длины участков b0-b5:')
+    b = [0 for i in range(6)]
+    for i in range(6):
+        b[i] = input_float('b%d = ' % i,
+                           cond=lambda x: x>=0,
+                           msg_on_false_cond='Длина участка не может быть отрицательной.')
 
-M = int(input_float('Введите количество клетей M = ',
-                    cond=lambda x: x>1 and x<1000 and int(x)==x,
-                    msg_on_false_cond='Количество клетей должно быть целым числом больше единицы.'))
+    N = int(input_float('Введите количество волн N = ',
+                        cond=lambda x: x>0 and x<1000 and int(x)==x,
+                        msg_on_false_cond='Количество волн должно быть целым числом больше нуля.'))
 
-ag = input_float('Введите начальный угол Amin = ',
-                 cond=lambda x: x>=0 and x<180,
-                 msg_on_false_cond='Начальный угол должен быть больше или равен нулю и меньше 180 градусов.')
+    M = int(input_float('Введите количество клетей M = ',
+                        cond=lambda x: x>1 and x<1000 and int(x)==x,
+                        msg_on_false_cond='Количество клетей должно быть целым числом больше единицы.'))
 
-amin = ag/180*pi
+    ag = input_float('Введите начальный угол Amin = ',
+                     cond=lambda x: x>=0 and x<180,
+                     msg_on_false_cond='Начальный угол должен быть больше или равен нулю и меньше 180 градусов.')
 
-ag = input_float('Введите конечный угол Amax = ',
-                 cond=lambda x: x>amin and x<180,
-                 msg_on_false_cond='Конечный угол должен быть больше начального, но меньше 180 градусов.')
+    amin = ag/180*pi
 
-amax = ag/180*pi
+    ag = input_float('Введите конечный угол Amax = ',
+                     cond=lambda x: x>amin and x<180,
+                     msg_on_false_cond='Конечный угол должен быть больше начального, но меньше 180 градусов.')
 
-eps = 1e-5
+    amax = ag/180*pi
 
-angles = []
+    eps = 1e-5
 
-# При минимальном угле альфа получается максимальная ширина и наоборот
-if amin == 0:
-    amin = sys.float_info.epsilon
-    M += 1  # Не считаем полностью развернутый лист клетью
-else:
-    angles.append(amin)
+    angles = []
 
-Wmax = width(b, amin)
-Wmin = width(b, amax)
-
-DW = (Wmax-Wmin)/(M-1)
-W = Wmax - DW
-
-a = amin
-for i in range(M-2):
-    a = secant_method(lambda x: width(b, x)-W, a, amax, eps)
-    W -= DW
-    angles.append(a)
-angles.append(amax)
-
-calc = []
-for i, angle in enumerate(angles):
-    profile = calculate_profile(b, angle)
+    if amin == 0:
+        amin = sys.float_info.epsilon
+        M += 1  # Не считаем полностью развернутый лист клетью
+    else:
+        angles.append(amin)
     
-    print('Клеть №%d' % (i+1))
-    print(format_string('Ag = %(ag)-6.2f', profile))
-    print(format_string('R1 = %(R1)-6.2f    R3 = %(R3)-6.2f', profile))
-    print(format_string('H  = %(H)-6.2f    H1 = %(H1)-6.2f    H2 = %(H2)-6.2f', profile))
-    print(format_string('W1 = %(W1)-6.2f    W2 = %(W2)-6.2f    W3 = %(W3)-6.2f', profile))
-    print()
+    # При минимальном угле альфа получается максимальная ширина и наоборот
+    Wmax = width(b, amin)
+    Wmin = width(b, amax)
 
-    calc.append(profile)
+    DW = (Wmax-Wmin)/(M-1)
+    W = Wmax - DW
 
-# Write to dxf file
-d = sdxf.Drawing()
+    a = amin
+    for i in range(M-2):
+        a = secant_method(lambda x: width(b, x)-W, a, amax, eps)
+        W -= DW
+        angles.append(a)
+    angles.append(amax)
 
-# Reserve two layers
-d.layers.append(sdxf.Layer('0'))
-d.append(sdxf.Line(points=[(0, 0), (0, 0)], layer='0'))
-d.layers.append(sdxf.Layer('1'))
-d.append(sdxf.Line(points=[(0, 0), (0, 0)], layer='1'))
+    calc = []
+    for i, angle in enumerate(angles):
+        profile = calculate_profile(b, angle)
+        
+        print('Клеть №%d' % (i+1))
+        print(format_string('Ag = %(ag)-6.2f', profile))
+        print(format_string('R1 = %(R1)-6.2f    R3 = %(R3)-6.2f', profile))
+        print(format_string('H  = %(H)-6.2f    H1 = %(H1)-6.2f    H2 = %(H2)-6.2f', profile))
+        print(format_string('W1 = %(W1)-6.2f    W2 = %(W2)-6.2f    W3 = %(W3)-6.2f', profile))
+        print()
 
-for i, item in enumerate(calc):
-    layer = str(i+1)
-    d.layers.append(sdxf.Layer(layer))
-    dxf_draw_profile(d, N, M, profile, layer=layer)
+        calc.append(profile)
 
-fname = input('Введите имя файла dxf: ')
-if not fname:
-    fname = 'profile'
-fname += '.dxf'
+    # Write to dxf file
+    d = sdxf.Drawing()
 
-d.saveas(fname)
+    # Reserve two layers
+    d.layers.append(sdxf.Layer('0'))
+    d.append(sdxf.Line(points=[(0, 0), (0, 0)], layer='0'))
+    d.layers.append(sdxf.Layer('1'))
+    d.append(sdxf.Line(points=[(0, 0), (0, 0)], layer='1'))
 
-print('Файл сохранён.')
+    for i, item in enumerate(calc):
+        layer = str(i+1)
+        d.layers.append(sdxf.Layer(layer))
+        dxf_draw_profile(d, N, M, profile, layer=layer)
 
-input()
+    fname = input('Введите имя файла dxf: ')
+    if not fname:
+        fname = 'profile'
+    fname += '.dxf'
+
+    d.saveas(fname)
+
+    print('Файл сохранён.')
+
+    input()
+
+
+if __name__ == '__main__':
+    main()

@@ -43,6 +43,100 @@ def secant_method(func, a1, a2, eps, stop=1000):
         
         n += 1
 
+
+def calculate_profile(b, angle):
+    ag = angle/pi*180
+    sinA = sin(angle)
+    cosA = cos(angle)
+    
+    R1 = b[1] / angle
+    R3 = b[3] / angle
+    
+    H2 = R3 * (1 - cosA)
+    H1 = H2 + b[2] * sinA
+    
+    H = b[2] * sinA + (R1 + R3) * (1 - cosA)
+    
+    W1 = R1 * sinA
+    W2 = b[2] * cosA
+    W3 = R3 * sinA
+    
+    return dict(ag=ag, R1=R1, R3=R3, H=H, H1=H1, H2=H2, W1=W1, W2=W2, W3=W3)
+
+
+def dxf_draw_profile(d, N, M, profile, **common):
+    W = 2*b[0]+(2*item['W1']+2*item['W2']+2*item['W3']+b[4])*N
+    if N>1:
+        W += b[5]*(N-1)
+    
+    x = -W/2
+    
+    # Left edge segment B0 (horizontal)
+    if b[0] > 0:
+        x1 = x + b[0]
+        d.append(sdxf.Line(points=[(x, item['H']),(x1, item['H'])], **common))
+        x = x1
+    
+    for j in range(N):
+        # Segment B1 (arc)
+        if b[1] > 0:
+            x1 = x + item['W1']
+            d.append(sdxf.Arc(center=(x, item['H']-item['R1']), radius=item['R1'],
+                              startAngle=90-item['ag'], endAngle=90, **common))
+            x = x1
+        
+        # Segment B2 (inclined)
+        if b[2] > 0:
+            x1 = x + item['W2']
+            d.append(sdxf.Line(points=[(x, item['H1']), (x1, item['H2'])], **common))
+            x = x1
+        
+        # Segment B3 (arc)
+        if b[3] > 0:
+            x1 = x + item['W3']
+            d.append(sdxf.Arc(center=(x1, item['R3']), radius=item['R3'],
+                              startAngle=270-item['ag'], endAngle=270, **common))
+            x = x1
+        
+        # Segment B4 (horizontal)
+        if b[4] > 0:
+            x1 = x + b[4]
+            d.append(sdxf.Line(points=[(x, 0),(x1, 0)], **common))
+            x = x1
+        
+        # Symmetrically against B4 segment
+        # Segment B3 (arc)
+        if b[3] > 0:
+            x1 = x + item['W3']
+            d.append(sdxf.Arc(center=(x, item['R3']), radius=item['R3'],
+                              startAngle=270, endAngle=270+item['ag'], **common))
+            x = x1
+        
+        # Segment B2 (inclined)
+        if b[2] > 0:
+            x1 = x + item['W2']
+            d.append(sdxf.Line(points=[(x, item['H2']), (x1, item['H1'])], **common))
+            x = x1
+        
+        # Segment B1 (arc)
+        if b[1] > 0:
+            x1 = x + item['W1']
+            d.append(sdxf.Arc(center=(x1, item['H']-item['R1']), radius=item['R1'],
+                              startAngle=90, endAngle=90+item['ag'], **common))
+            x = x1
+        
+        # Segment B5 (horizontal)
+        if j < N-1 and b[5] > 0:
+            x1 = x + b[5]
+            d.append(sdxf.Line(points=[(x, item['H']),(x1, item['H'])], **common))
+            x = x1
+    
+    # Right edge segment B0
+    if b[0] > 0:
+        x1 = x + b[0]
+        d.append(sdxf.Line(points=[(x, item['H']),(x1, item['H'])], **common))
+        x = x1
+
 print('Введите длины участков b0-b5:')
 b = [0 for i in range(6)]
 for i in range(6):
@@ -96,31 +190,16 @@ angles.append(amax)
 
 calc = []
 for i, angle in enumerate(angles):
-    ag = angle/pi*180
-    
-    sinA = sin(angle)
-    cosA = cos(angle)
-    
-    R1 = b[1] / angle
-    R3 = b[3] / angle
-    
-    H2 = R3 * (1 - cosA)
-    H1 = H2 + b[2] * sinA
-    
-    H = b[2] * sinA + (R1 + R3) * (1 - cosA)
-    
-    W1 = R1 * sinA
-    W2 = b[2] * cosA
-    W3 = R3 * sinA
+    profile = calculate_profile(b, angle)
     
     print('Клеть №%d' % (i+1))
-    print(format_string('Ag = %-6.2f', ag))
-    print(format_string('R1 = %-6.2f    R3 = %-6.2f', (R1, R3)))
-    print(format_string('H  = %-6.2f    H1 = %-6.2f    H2 = %-6.2f', (H, H1, H2)))
-    print(format_string('W1 = %-6.2f    W2 = %-6.2f    W3 = %-6.2f', (W1, W2, W3)))
+    print(format_string('Ag = %(ag)-6.2f', profile))
+    print(format_string('R1 = %(R1)-6.2f    R3 = %(R3)-6.2f', profile))
+    print(format_string('H  = %(H)-6.2f    H1 = %(H1)-6.2f    H2 = %(H2)-6.2f', profile))
+    print(format_string('W1 = %(W1)-6.2f    W2 = %(W2)-6.2f    W3 = %(W3)-6.2f', profile))
     print()
 
-    calc.append(dict(ag=ag, R1=R1, R3=R3, H=H, H1=H1, H2=H2, W1=W1, W2=W2, W3=W3))
+    calc.append(profile)
 
 # Write to dxf file
 d = sdxf.Drawing()
@@ -132,81 +211,9 @@ d.layers.append(sdxf.Layer('1'))
 d.append(sdxf.Line(points=[(0, 0), (0, 0)], layer='1'))
 
 for i, item in enumerate(calc):
-    W = 2*b[0]+(2*item['W1']+2*item['W2']+2*item['W3']+b[4])*N
-    if N>1:
-        W += b[5]*(N-1)
-    
-    x = -W/2
-    
     layer = str(i+1)
     d.layers.append(sdxf.Layer(layer))
-    
-    # Left edge segment B0 (horizontal)
-    if b[0] > 0:
-        x1 = x + b[0]
-        d.append(sdxf.Line(points=[(x, item['H']),(x1, item['H'])], layer=layer))
-        x = x1
-    
-    for j in range(N):
-        # Segment B1 (arc)
-        if b[1] > 0:
-            x1 = x + item['W1']
-            d.append(sdxf.Arc(center=(x, item['H']-item['R1']), radius=item['R1'],
-                              startAngle=90-item['ag'], endAngle=90, layer=layer))
-            x = x1
-        
-        # Segment B2 (inclined)
-        if b[2] > 0:
-            x1 = x + item['W2']
-            d.append(sdxf.Line(points=[(x, item['H1']), (x1, item['H2'])], layer=layer))
-            x = x1
-        
-        # Segment B3 (arc)
-        if b[3] > 0:
-            x1 = x + item['W3']
-            d.append(sdxf.Arc(center=(x1, item['R3']), radius=item['R3'],
-                              startAngle=270-item['ag'], endAngle=270, layer=layer))
-            x = x1
-        
-        # Segment B4 (horizontal)
-        if b[4] > 0:
-            x1 = x + b[4]
-            d.append(sdxf.Line(points=[(x, 0),(x1, 0)], layer=layer))
-            x = x1
-        
-        # Symmetrically against B4 segment
-        # Segment B3 (arc)
-        if b[3] > 0:
-            x1 = x + item['W3']
-            d.append(sdxf.Arc(center=(x, item['R3']), radius=item['R3'],
-                              startAngle=270, endAngle=270+item['ag'], layer=layer))
-            x = x1
-        
-        # Segment B2 (inclined)
-        if b[2] > 0:
-            x1 = x + item['W2']
-            d.append(sdxf.Line(points=[(x, item['H2']), (x1, item['H1'])], layer=layer))
-            x = x1
-        
-        # Segment B1 (arc)
-        if b[1] > 0:
-            x1 = x + item['W1']
-            d.append(sdxf.Arc(center=(x1, item['H']-item['R1']), radius=item['R1'],
-                              startAngle=90, endAngle=90+item['ag'], layer=layer))
-            x = x1
-        
-        # Segment B5 (horizontal)
-        if j < N-1 and b[5] > 0:
-            x1 = x + b[5]
-            d.append(sdxf.Line(points=[(x, item['H']),(x1, item['H'])], layer=layer))
-            x = x1
-    
-    # Right edge segment B0
-    if b[0] > 0:
-        x1 = x + b[0]
-        d.append(sdxf.Line(points=[(x, item['H']),(x1, item['H'])], layer=layer))
-        x = x1
-
+    dxf_draw_profile(d, N, M, profile, layer=layer)
 
 fname = input('Введите имя файла dxf: ')
 if not fname:

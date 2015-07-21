@@ -22,8 +22,8 @@ def input_float(prompt='', cond=None, msg_on_false_cond=''):
     return ret
 
 print('Введите длины участков b0-b5:')
-b = [0 for i in range(5)]
-for i in range(5):
+b = [0 for i in range(6)]
+for i in range(6):
     b[i] = input_float('b%d = ' % i,
                        cond=lambda x: x>=0,
                        msg_on_false_cond='Длина участка не может быть отрицательной.')
@@ -122,7 +122,99 @@ for i, angle in enumerate(angles):
 
     calc.append(dict(ag=ag, R1=R1, R3=R3, H=H, H1=H1, H2=H2, W1=W1, W2=W2, W3=W3))
 
-dxf_file = sdxf.Drawing()
+# Write to dxf file
+d = sdxf.Drawing()
 
+# Reserve two layers
+d.layers.append(sdxf.Layer('0'))
+d.append(sdxf.Line(points=[(0, 0), (0, 0)], layer='0'))
+d.layers.append(sdxf.Layer('1'))
+d.append(sdxf.Line(points=[(0, 0), (0, 0)], layer='1'))
+
+for i, item in enumerate(calc):
+    W = 2*b[0]+(2*item['W1']+2*item['W2']+2*item['W3']+b[4])*N
+    if N>1:
+        W += b[5]*(N-1)
+    
+    x = -W/2
+    
+    layer = str(i+1)
+    d.layers.append(sdxf.Layer(layer))
+    
+    # Left edge segment B0 (horizontal)
+    if b[0] > 0:
+        x1 = x + b[0]
+        d.append(sdxf.Line(points=[(x, item['H']),(x1, item['H'])], layer=layer))
+        x = x1
+    
+    for j in range(N):
+        # Segment B1 (arc)
+        if b[1] > 0:
+            x1 = x + item['W1']
+            d.append(sdxf.Arc(center=(x, item['H']-item['R1']), radius=item['R1'],
+                              startAngle=90-item['ag'], endAngle=90, layer=layer))
+            x = x1
+        
+        # Segment B2 (inclined)
+        if b[2] > 0:
+            x1 = x + item['W2']
+            d.append(sdxf.Line(points=[(x, item['H1']), (x1, item['H2'])], layer=layer))
+            x = x1
+        
+        # Segment B3 (arc)
+        if b[3] > 0:
+            x1 = x + item['W3']
+            d.append(sdxf.Arc(center=(x1, item['R3']), radius=item['R3'],
+                              startAngle=270-item['ag'], endAngle=270, layer=layer))
+            x = x1
+        
+        # Segment B4 (horizontal)
+        if b[4] > 0:
+            x1 = x + b[4]
+            d.append(sdxf.Line(points=[(x, 0),(x1, 0)], layer=layer))
+            x = x1
+        
+        # Symmetrically against B4 segment
+        # Segment B3 (arc)
+        if b[3] > 0:
+            x1 = x + item['W3']
+            d.append(sdxf.Arc(center=(x, item['R3']), radius=item['R3'],
+                              startAngle=270, endAngle=270+item['ag'], layer=layer))
+            x = x1
+        
+        # Segment B2 (inclined)
+        if b[2] > 0:
+            x1 = x + item['W2']
+            d.append(sdxf.Line(points=[(x, item['H2']), (x1, item['H1'])], layer=layer))
+            x = x1
+        
+        # Segment B1 (arc)
+        if b[1] > 0:
+            x1 = x + item['W1']
+            d.append(sdxf.Arc(center=(x1, item['H']-item['R1']), radius=item['R1'],
+                              startAngle=90, endAngle=90+item['ag'], layer=layer))
+            x = x1
+        
+        # Segment B5 (horizontal)
+        if j < N-1 and b[5] > 0:
+            x1 = x + b[5]
+            d.append(sdxf.Line(points=[(x, item['H']),(x1, item['H'])], layer=layer))
+            x = x1
+    
+    # Right edge segment B0
+    if b[0] > 0:
+        x1 = x + b[0]
+        d.append(sdxf.Line(points=[(x, item['H']),(x1, item['H'])], layer=layer))
+        x = x1
+
+
+fname = input('Введите имя файла dxf: ')
+if not fname:
+    fname = 'profile'
+fname += '.dxf'
+
+d.saveas(fname)
+
+print('Файл сохранён.')
 
 input()

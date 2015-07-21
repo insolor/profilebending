@@ -7,6 +7,7 @@ setlocale(LC_NUMERIC, '')
 sys.path.append('../../SDXF')
 import sdxf
 
+
 def input_float(prompt='', cond=None, msg_on_false_cond=''):
     while True:
         try:
@@ -20,6 +21,27 @@ def input_float(prompt='', cond=None, msg_on_false_cond=''):
             else:
                 break
     return ret
+
+
+def width(b, alpha):
+    return (b[1]+b[3])/alpha*sin(alpha)+b[2]*cos(alpha)
+
+
+def secant_method(func, a1, a2, eps, stop=1000):
+    n = 0
+    while True:
+        if abs(a1-a2)<eps or stop and n > stop:
+            assert abs(func(a2))<eps, 'Failed to reach a null of the function'
+            return a2
+        
+        try:
+            a1 = a2 - (a2-a1)*func(a2)/(func(a2)-func(a1))
+            a2 = a1 - (a1-a2)*func(a1)/(func(a1)-func(a2))
+        except ZeroDivisionError:
+            assert abs(func(a2))<eps, 'Failed to reach a null of the function'
+            return a2
+        
+        n += 1
 
 print('Введите длины участков b0-b5:')
 b = [0 for i in range(6)]
@@ -48,27 +70,6 @@ ag = input_float('Введите конечный угол Amax = ',
 
 amax = ag/180*pi
 
-
-def width(b, alpha):
-    return (b[1]+b[3])/alpha*sin(alpha)+b[2]*cos(alpha)
-
-
-def secant_method(func, a1, a2, eps, stop=1000):
-    n = 0
-    while True:
-        if abs(a1-a2)<eps or stop and n > stop:
-            assert abs(func(a2))<eps, 'Failed to reach a null of the function'
-            return a2
-        
-        try:
-            a1 = a2 - (a2-a1)*func(a2)/(func(a2)-func(a1))
-            a2 = a1 - (a1-a2)*func(a1)/(func(a1)-func(a2))
-        except ZeroDivisionError:
-            assert abs(func(a2))<eps, 'Failed to reach a null of the function'
-            return a2
-        
-        n += 1
-
 eps = 1e-5
 
 angles = []
@@ -76,12 +77,11 @@ angles = []
 # При минимальном угле альфа получается максимальная ширина и наоборот
 if amin == 0:
     amin = sys.float_info.epsilon
-    Wmax = b[1] + b[2] + b[3]
     M += 1  # Не считаем полностью развернутый лист клетью
 else:
-    Wmax = width(b, amin)
     angles.append(amin)
 
+Wmax = width(b, amin)
 Wmin = width(b, amax)
 
 DW = (Wmax-Wmin)/(M-1)

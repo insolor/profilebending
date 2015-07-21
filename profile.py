@@ -64,7 +64,7 @@ def calculate_profile(b, angle):
     return dict(ag=ag, R1=R1, R3=R3, H=H, H1=H1, H2=H2, W1=W1, W2=W2, W3=W3)
 
 
-def dxf_draw_profile(d, N, M, profile, **common):
+def dxf_draw_profile(d, N, M, b, profile, **common):
     W = 2*b[0]+(2*item['W1']+2*item['W2']+2*item['W3']+b[4])*N
     if N>1:
         W += b[5]*(N-1)

@@ -6,80 +6,91 @@ class ProfileTk(Profile):
     def __init__(self, **kwargs):
         Profile.__init__(self, **kwargs)
 
-    def canvas_draw(self, parent):
-        def arc(parent, center, radius, startAngle, endAngle):
+    def canvas_draw(self, parent, x0=0, y0=100, **common):
+        def arc(parent, center, radius, start, extent, **common):
             parent.create_arc((center[0]-radius, center[1]-radius, center[0]+radius, center[1]+radius),
-                start=startAngle, extent=endAngle, style=ARC)
+                start=start, extent=extent, style=ARC, **common)
         
         self.calculate_profile()
         d = []
-        x = 0
+        x = x0
+        y = y0
         # x = -self.width/2
-
+        
         # Left edge segment B0 (horizontal)
         if self.b[0] > 0:
             x1 = x + self.b[0]
-            parent.create_line([(x, self.h), (x1, self.h)])
+            parent.create_line([(x, y), (x1, y)], **common)
             x = x1
-
+        
         for j in range(self.waves):
             # Segment B1 (arc)
             if self.b[1] > 0:
-                x1 = x + self.w1
-                arc(parent, center=(x, self.h-self.r1), radius=self.r1,
-                    startAngle=90-self.ag, endAngle=90)
-                x = x1
+                arc(parent, center=(x, y+self.r1), radius=self.r1,
+                    start=90, extent=-self.angle_deg, **common)
+                x += self.w1
+                y += self.h1
 
             # Segment B2 (inclined)
             if self.b[2] > 0:
                 x1 = x + self.w2
-                # d.append(sdxf.Line(points=[(x, self.h1), (x1, self.h2)], **common))
+                y1 = y + self.h2
+                parent.create_line([(x, y), (x1, y1)], **common)
                 x = x1
+                y = y1
 
             # Segment B3 (arc)
             if self.b[3] > 0:
                 x1 = x + self.w3
-                # d.append(sdxf.Arc(center=(x1, self.r3), radius=self.r3,
-                                  # startAngle=270-self.ag, endAngle=270, **common))
+                y1 = y + self.h3
+                arc(parent, center=(x1, y1-self.r1), radius=self.r1,
+                    start=270, extent=-self.angle_deg, **common)
                 x = x1
+                y = y1
 
             # Segment B4 (horizontal)
             if self.b[4] > 0:
                 x1 = x + self.b[4]
-                # d.append(sdxf.Line(points=[(x, 0), (x1, 0)], **common))
+                parent.create_line([(x, y), (x1, y)], **common)
                 x = x1
 
             # Symmetrically against B4 segment
             # Segment B3 (arc)
             if self.b[3] > 0:
                 x1 = x + self.w3
-                # d.append(sdxf.Arc(center=(x, self.r3), radius=self.r3,
-                                  # startAngle=270, endAngle=270+self.ag, **common))
+                y1 = y - self.h3
+                arc(parent, center=(x, y-self.r1), radius=self.r1,
+                    start=270, extent=self.angle_deg, **common)
                 x = x1
+                y = y1
 
             # Segment B2 (inclined)
             if self.b[2] > 0:
                 x1 = x + self.w2
-                # d.append(sdxf.Line(points=[(x, self.h2), (x1, self.h1)], **common))
+                y1 = y - self.h2
+                parent.create_line([(x, y), (x1, y1)], **common)
                 x = x1
+                y = y1
 
             # Segment B1 (arc)
             if self.b[1] > 0:
                 x1 = x + self.w1
-                # d.append(sdxf.Arc(center=(x1, self.h-self.r1), radius=self.r1,
-                                  # startAngle=90, endAngle=90+self.ag, **common))
+                y1 = y - self.h1
+                arc(parent, center=(x1, y1+self.r1), radius=self.r1,
+                    start=90, extent=self.angle_deg, **common)
                 x = x1
+                y = y1
 
             # Segment B5 (horizontal)
             if j < self.waves-1 and self.b[5] > 0:
-                # x1 = x + self.b[5]
-                # d.append(sdxf.Line(points=[(x, self.h), (x1, self.h)], **common))
+                x1 = x + self.b[5]
+                parent.create_line([(x, y), (x1, y)], **common)
                 x = x1
 
         # Right edge segment B0
         if self.b[0] > 0:
             x1 = x + self.b[0]
-            parent.create_line([(x, self.h), (x1, self.h)])
+            parent.create_line([(x, y), (x1, y)], **common)
 
 
 class App(Tk):
@@ -94,8 +105,8 @@ class App(Tk):
         self._init_main_menu()
         self._init_labels_and_text_boxes(sidebarFrame)
         
-        profile = ProfileTk(b=[100, 100, 100, 100, 100, 100], waves=1, angle=45)
-        profile.canvas_draw(self.canvas)
+        profile = ProfileTk(b=[20, 5, 20, 5, 20, 20], waves=4, angle_deg=60)
+        profile.canvas_draw(self.canvas, width=1)
     
     def _init_canvas(self, parent):
         self.canvas = Canvas(parent, width=640, height=480, bg="white")

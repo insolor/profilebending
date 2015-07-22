@@ -19,8 +19,7 @@ def input_float(prompt='', cond=None, msg_on_false_cond=''):
             if cond and not cond(ret):
                 print(msg_on_false_cond)
             else:
-                break
-    return ret
+                return ret
 
 
 def width(b, alpha):

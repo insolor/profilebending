@@ -162,21 +162,21 @@ def main():
                            msg_on_false_cond='Длина участка не может быть отрицательной.')
 
     N = int(input_float('Введите количество волн N = ',
-                        cond=lambda x: x>0 and x<1000 and int(x)==x,
+                        cond=lambda x: 0 < x < 1000 and int(x) == x,
                         msg_on_false_cond='Количество волн должно быть целым числом больше нуля.'))
 
     M = int(input_float('Введите количество клетей M = ',
-                        cond=lambda x: x>1 and x<1000 and int(x)==x,
+                        cond=lambda x: 1 < x < 1000 and int(x) == x,
                         msg_on_false_cond='Количество клетей должно быть целым числом больше единицы.'))
 
     ag = input_float('Введите начальный угол Amin = ',
-                     cond=lambda x: x>=0 and x<180,
+                     cond=lambda x: 0 <= x < 180,
                      msg_on_false_cond='Начальный угол должен быть больше или равен нулю и меньше 180 градусов.')
 
     amin = ag/180*pi
 
     ag = input_float('Введите конечный угол Amax = ',
-                     cond=lambda x: x>amin and x<180,
+                     cond=lambda x: amin < x < 180,
                      msg_on_false_cond='Конечный угол должен быть больше начального, но меньше 180 градусов.')
 
     amax = ag/180*pi

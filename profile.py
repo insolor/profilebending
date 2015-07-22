@@ -10,8 +10,8 @@ import sdxf
 
 def input_float(prompt='', cond=None, msg_on_false_cond=''):
     while True:
+        inp = input(prompt)
         try:
-            inp = input(prompt)
             ret = atof(inp)
         except ValueError:
             print('Неверный ввод: \'%s\'' % inp)

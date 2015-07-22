@@ -29,120 +29,136 @@ def width(b, alpha):
 def secant_method(func, a1, a2, eps, stop=1000):
     n = 0
     while True:
-        if abs(a1-a2)<eps or stop and n > stop:
-            assert abs(func(a2))<eps, 'Failed to reach a null of the function'
+        if abs(a1-a2) < eps or stop and n > stop:
+            assert abs(func(a2)) < eps, 'Failed to reach a null of the function'
             return a2
         
         try:
             a1 = a2 - (a2-a1)*func(a2)/(func(a2)-func(a1))
             a2 = a1 - (a1-a2)*func(a1)/(func(a1)-func(a2))
         except ZeroDivisionError:
-            assert abs(func(a2))<eps, 'Failed to reach a null of the function'
+            assert abs(func(a2)) < eps, 'Failed to reach a null of the function'
             return a2
         
         n += 1
 
 
-def calculate_profile(b, angle):
-    ag = angle/pi*180
-    sinA = sin(angle)
-    cosA = cos(angle)
-    
-    R1 = b[1] / angle
-    R3 = b[3] / angle
-    
-    H2 = R3 * (1 - cosA)
-    H1 = H2 + b[2] * sinA
-    
-    H = b[2] * sinA + (R1 + R3) * (1 - cosA)
-    
-    W1 = R1 * sinA
-    W2 = b[2] * cosA
-    W3 = R3 * sinA
-    
-    return dict(ag=ag, R1=R1, R3=R3, H=H, H1=H1, H2=H2, W1=W1, W2=W2, W3=W3)
+class Profile(object):
+    def __init__(self, b, waves, angle):
+        self.b = b
+        self.waves = waves
+        self.angle = angle
+        self.calculate_profile()
 
+    def calculate_profile(self):
+        self.ag = self.angle/pi*180
+        sina = sin(self.angle)
+        cosa = cos(self.angle)
 
-def dxf_draw_profile(d, N, b, profile, **common):
-    W = 2*b[0]+(2*profile['W1']+2*profile['W2']+2*profile['W3']+b[4])*N
-    if N>1:
-        W += b[5]*(N-1)
-    
-    x = -W/2
-    
-    # Left edge segment B0 (horizontal)
-    if b[0] > 0:
-        x1 = x + b[0]
-        d.append(sdxf.Line(points=[(x, profile['H']),(x1, profile['H'])], **common))
-        x = x1
-    
-    for j in range(N):
-        # Segment B1 (arc)
-        if b[1] > 0:
-            x1 = x + profile['W1']
-            d.append(sdxf.Arc(center=(x, profile['H']-profile['R1']), radius=profile['R1'],
-                              startAngle=90-profile['ag'], endAngle=90, **common))
+        self.r1 = self.b[1] / self.angle
+        self.r3 = self.b[3] / self.angle
+
+        self.h2 = self.r3 * (1 - cosa)
+        self.h1 = self.h2 + self.b[2] * sina
+
+        self.h = self.b[2] * sina + (self.r1 + self.r3) * (1 - cosa)
+
+        self.w1 = self.r1 * sina
+        self.w2 = self.b[2] * cosa
+        self.w3 = self.r3 * sina
+
+    @property
+    def width(self):
+        self.calculate_profile()
+        width = 2*self.b[0]+(2*self.w1+2*self.w2+2*self.w3+self.b[4])*self.waves
+        if self.waves > 1:
+            width += self.b[5]*(self.waves-1)
+        return width
+
+    def dxf_draw(self, **common):
+        d = []
+        x = -self.width/2
+
+        # Left edge segment B0 (horizontal)
+        if self.b[0] > 0:
+            x1 = x + self.b[0]
+            d.append(sdxf.Line(points=[(x, self.h), (x1, self.h)], **common))
             x = x1
-        
-        # Segment B2 (inclined)
-        if b[2] > 0:
-            x1 = x + profile['W2']
-            d.append(sdxf.Line(points=[(x, profile['H1']), (x1, profile['H2'])], **common))
-            x = x1
-        
-        # Segment B3 (arc)
-        if b[3] > 0:
-            x1 = x + profile['W3']
-            d.append(sdxf.Arc(center=(x1, profile['R3']), radius=profile['R3'],
-                              startAngle=270-profile['ag'], endAngle=270, **common))
-            x = x1
-        
-        # Segment B4 (horizontal)
-        if b[4] > 0:
-            x1 = x + b[4]
-            d.append(sdxf.Line(points=[(x, 0),(x1, 0)], **common))
-            x = x1
-        
-        # Symmetrically against B4 segment
-        # Segment B3 (arc)
-        if b[3] > 0:
-            x1 = x + profile['W3']
-            d.append(sdxf.Arc(center=(x, profile['R3']), radius=profile['R3'],
-                              startAngle=270, endAngle=270+profile['ag'], **common))
-            x = x1
-        
-        # Segment B2 (inclined)
-        if b[2] > 0:
-            x1 = x + profile['W2']
-            d.append(sdxf.Line(points=[(x, profile['H2']), (x1, profile['H1'])], **common))
-            x = x1
-        
-        # Segment B1 (arc)
-        if b[1] > 0:
-            x1 = x + profile['W1']
-            d.append(sdxf.Arc(center=(x1, profile['H']-profile['R1']), radius=profile['R1'],
-                              startAngle=90, endAngle=90+profile['ag'], **common))
-            x = x1
-        
-        # Segment B5 (horizontal)
-        if j < N-1 and b[5] > 0:
-            x1 = x + b[5]
-            d.append(sdxf.Line(points=[(x, profile['H']),(x1, profile['H'])], **common))
-            x = x1
-    
-    # Right edge segment B0
-    if b[0] > 0:
-        x1 = x + b[0]
-        d.append(sdxf.Line(points=[(x, profile['H']),(x1, profile['H'])], **common))
-        x = x1
+
+        for j in range(self.waves):
+            # Segment B1 (arc)
+            if self.b[1] > 0:
+                x1 = x + self.w1
+                d.append(sdxf.Arc(center=(x, self.h-self.r1), radius=self.r1,
+                                  startAngle=90-self.ag, endAngle=90, **common))
+                x = x1
+
+            # Segment B2 (inclined)
+            if self.b[2] > 0:
+                x1 = x + self.w2
+                d.append(sdxf.Line(points=[(x, self.h1), (x1, self.h2)], **common))
+                x = x1
+
+            # Segment B3 (arc)
+            if self.b[3] > 0:
+                x1 = x + self.w3
+                d.append(sdxf.Arc(center=(x1, self.r3), radius=self.r3,
+                                  startAngle=270-self.ag, endAngle=270, **common))
+                x = x1
+
+            # Segment B4 (horizontal)
+            if self.b[4] > 0:
+                x1 = x + self.b[4]
+                d.append(sdxf.Line(points=[(x, 0), (x1, 0)], **common))
+                x = x1
+
+            # Symmetrically against B4 segment
+            # Segment B3 (arc)
+            if self.b[3] > 0:
+                x1 = x + self.w3
+                d.append(sdxf.Arc(center=(x, self.r3), radius=self.r3,
+                                  startAngle=270, endAngle=270+self.ag, **common))
+                x = x1
+
+            # Segment B2 (inclined)
+            if self.b[2] > 0:
+                x1 = x + self.w2
+                d.append(sdxf.Line(points=[(x, self.h2), (x1, self.h1)], **common))
+                x = x1
+
+            # Segment B1 (arc)
+            if self.b[1] > 0:
+                x1 = x + self.w1
+                d.append(sdxf.Arc(center=(x1, self.h-self.r1), radius=self.r1,
+                                  startAngle=90, endAngle=90+self.ag, **common))
+                x = x1
+
+            # Segment B5 (horizontal)
+            if j < self.waves-1 and self.b[5] > 0:
+                x1 = x + self.b[5]
+                d.append(sdxf.Line(points=[(x, self.h), (x1, self.h)], **common))
+                x = x1
+
+        # Right edge segment B0
+        if self.b[0] > 0:
+            x1 = x + self.b[0]
+            d.append(sdxf.Line(points=[(x, self.h), (x1, self.h)], **common))
+
+        return d
+
+    def print(self):
+        print('Ag = %-6.2f' % self.ag)
+        print('R1 = %-6.2f    R3 = %-6.2f' % (self.r1, self.r3))
+        print('H  = %-6.2f    H1 = %-6.2f    H2 = %-6.2f' % (self.h, self.h1, self.h2))
+        print('W1 = %-6.2f    W2 = %-6.2f    W3 = %-6.2f' % (self.w1, self.w2, self.w3))
 
 
 def main():
     print('Введите длины участков b0-b5:')
-    b = [0 for i in range(6)]
+    b = [0 for _ in range(6)]
     for i in range(6):
         b[i] = input_float('b%d = ' % i,
-                           cond=lambda x: x>=0,
+                           cond=lambda x: x >= 0,
                            msg_on_false_cond='Длина участка не может быть отрицательной.')
 
     N = int(input_float('Введите количество волн N = ',
@@ -191,30 +207,25 @@ def main():
 
     calc = []
     for i, angle in enumerate(angles):
-        profile = calculate_profile(b, angle)
-        
+        profile = Profile(b=b, waves=N, angle=angle)
         print('Клеть №%d' % (i+1))
-        print(format_string('Ag = %(ag)-6.2f', profile))
-        print(format_string('R1 = %(R1)-6.2f    R3 = %(R3)-6.2f', profile))
-        print(format_string('H  = %(H)-6.2f    H1 = %(H1)-6.2f    H2 = %(H2)-6.2f', profile))
-        print(format_string('W1 = %(W1)-6.2f    W2 = %(W2)-6.2f    W3 = %(W3)-6.2f', profile))
+        profile.print()
         print()
-
         calc.append(profile)
     
     # Write to dxf file
     d = sdxf.Drawing()
 
     # Reserve two layers
-    d.layers.append(sdxf.Layer('0'))
-    d.append(sdxf.Line(points=[(0, 0), (0, 0)], layer='0'))
-    d.layers.append(sdxf.Layer('1'))
-    d.append(sdxf.Line(points=[(0, 0), (0, 0)], layer='1'))
+    # d.layers.append(sdxf.Layer('0'))
+    # d.append(sdxf.Line(points=[(0, 0), (0, 0)], layer='0'))
+    # d.layers.append(sdxf.Layer('1'))
+    # d.append(sdxf.Line(points=[(0, 0), (0, 0)], layer='1'))
 
     for i, profile in enumerate(calc):
-        layer = str(i+1)
+        layer = str(i)
         d.layers.append(sdxf.Layer(layer))
-        dxf_draw_profile(d, N, b, profile, layer=layer)
+        d.extend(profile.dxf_draw(layer=layer))
 
     fname = input('Введите имя файла dxf: ')
     if not fname:

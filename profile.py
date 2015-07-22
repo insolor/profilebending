@@ -58,10 +58,11 @@ class Profile(object):
         self.r1 = self.b[1] / self.angle
         self.r3 = self.b[3] / self.angle
 
-        self.h2 = self.r3 * (1 - cosa)
-        self.h1 = self.h2 + self.b[2] * sina
+        self.h1 = self.r1 * (1 - cosa)
+        self.h2 = self.b[2] * sina
+        self.h3 = self.r3 * (1 - cosa)
 
-        self.h = self.b[2] * sina + (self.r1 + self.r3) * (1 - cosa)
+        self.h = self.h1 + self.h2 + self.h3
 
         self.w1 = self.r1 * sina
         self.w2 = self.b[2] * cosa
@@ -96,7 +97,7 @@ class Profile(object):
             # Segment B2 (inclined)
             if self.b[2] > 0:
                 x1 = x + self.w2
-                d.append(sdxf.Line(points=[(x, self.h1), (x1, self.h2)], **common))
+                d.append(sdxf.Line(points=[(x, self.h2 + self.h3), (x1, self.h3)], **common))
                 x = x1
 
             # Segment B3 (arc)
@@ -123,7 +124,7 @@ class Profile(object):
             # Segment B2 (inclined)
             if self.b[2] > 0:
                 x1 = x + self.w2
-                d.append(sdxf.Line(points=[(x, self.h2), (x1, self.h1)], **common))
+                d.append(sdxf.Line(points=[(x, self.h3), (x1, self.h2 + self.h3)], **common))
                 x = x1
 
             # Segment B1 (arc)
@@ -149,7 +150,8 @@ class Profile(object):
     def print(self):
         print('Ag = %-6.2f' % self.ag)
         print('R1 = %-6.2f    R3 = %-6.2f' % (self.r1, self.r3))
-        print('H  = %-6.2f    H1 = %-6.2f    H2 = %-6.2f' % (self.h, self.h1, self.h2))
+        print('H  = %-6.2f    H1 = %-6.2f    H2 = %-6.2f    H3 = %-6.2f' %
+              (self.h, self.h1, self.h2, self.h3))
         print('W1 = %-6.2f    W2 = %-6.2f    W3 = %-6.2f' % (self.w1, self.w2, self.w3))
 
 

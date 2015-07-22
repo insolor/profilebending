@@ -44,14 +44,20 @@ def secant_method(func, a1, a2, eps, stop=1000):
 
 
 class Profile(object):
-    def __init__(self, b, waves, angle):
+    def __init__(self, b, waves, angle_deg=None, angle=None):
         self.b = b
         self.waves = waves
-        self.angle = angle
+        
+        if angle_deg is not None:
+            self.angle_deg = angle_deg
+            self.angle = angle_deg/180*pi
+        else:
+            self.angle = angle
+            self.angle_deg = angle/pi*180
+        
         self.calculate_profile()
 
     def calculate_profile(self):
-        self.ag = self.angle/pi*180
         sina = sin(self.angle)
         cosa = cos(self.angle)
 
@@ -91,7 +97,7 @@ class Profile(object):
             if self.b[1] > 0:
                 x1 = x + self.w1
                 d.append(sdxf.Arc(center=(x, self.h-self.r1), radius=self.r1,
-                                  startAngle=90-self.ag, endAngle=90, **common))
+                                  startAngle=90-self.angle_deg, endAngle=90, **common))
                 x = x1
 
             # Segment B2 (inclined)
@@ -104,7 +110,7 @@ class Profile(object):
             if self.b[3] > 0:
                 x1 = x + self.w3
                 d.append(sdxf.Arc(center=(x1, self.r3), radius=self.r3,
-                                  startAngle=270-self.ag, endAngle=270, **common))
+                                  startAngle=270-self.angle_deg, endAngle=270, **common))
                 x = x1
 
             # Segment B4 (horizontal)
@@ -118,7 +124,7 @@ class Profile(object):
             if self.b[3] > 0:
                 x1 = x + self.w3
                 d.append(sdxf.Arc(center=(x, self.r3), radius=self.r3,
-                                  startAngle=270, endAngle=270+self.ag, **common))
+                                  startAngle=270, endAngle=270+self.angle_deg, **common))
                 x = x1
 
             # Segment B2 (inclined)
@@ -131,7 +137,7 @@ class Profile(object):
             if self.b[1] > 0:
                 x1 = x + self.w1
                 d.append(sdxf.Arc(center=(x1, self.h-self.r1), radius=self.r1,
-                                  startAngle=90, endAngle=90+self.ag, **common))
+                                  startAngle=90, endAngle=90+self.angle_deg, **common))
                 x = x1
 
             # Segment B5 (horizontal)
@@ -148,7 +154,7 @@ class Profile(object):
         return d
 
     def print(self):
-        print('Ag = %-6.2f' % self.ag)
+        print('Ag = %-6.2f' % self.angle_deg)
         print('R1 = %-6.2f    R3 = %-6.2f' % (self.r1, self.r3))
         print('H  = %-6.2f    H1 = %-6.2f    H2 = %-6.2f    H3 = %-6.2f' %
               (self.h, self.h1, self.h2, self.h3))

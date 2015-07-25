@@ -6,21 +6,22 @@ class ProfileTk(Profile):
     def __init__(self, **kwargs):
         Profile.__init__(self, **kwargs)
 
-    def canvas_draw(self, parent, x0=0, y0=100, scale=10, **common):
+    def canvas_draw(self, parent, x0=0, y0=0, scale=1, **common):
         def arc(parent, center, radius, start, extent, **common):
             parent.create_arc((center[0]-radius, center[1]-radius, center[0]+radius, center[1]+radius),
                 start=start, extent=extent, style=ARC, **common)
         
         self.calculate_profile()
-        d = []
-        x = x0-self.width/2
-        y = y0
+        # d = []
         
         # Scale profile parameters
         b = [x*scale for x in self.b]
-        h1, h2, h3, w1, w2, w3, r1, r3 = (x*scale for x in (self.h1, self.h2, self.h3,
-                                                            self.w1, self.w2, self.w3,
-                                                            self.r1, self.r3))
+        h, h1, h2, h3, w1, w2, w3, r1, r3 = (x*scale for x in (self.h, self.h1, self.h2, self.h3,
+                                                               self.w1, self.w2, self.w3,
+                                                               self.r1, self.r3))
+        
+        x = x0-self.width*scale/2
+        y = y0-h
         
         # Left edge segment B0 (horizontal)
         if b[0] > 0:
@@ -100,9 +101,11 @@ class ProfileTk(Profile):
 
 class App(Tk):
     def __init__(self):
+        self.canvas_width = 640
+        self.canvas_height = 480
         Tk.__init__(self)
         sidebarFrame = Frame(self, width=160)
-        canvasFrame = Frame(self, width=640, height=480)
+        canvasFrame = Frame(self, width=self.canvas_width, height=self.canvas_height)
         sidebarFrame.pack(side='left', fill='y')
         canvasFrame.pack(side='right', fill='both', expand=1)
         
@@ -110,8 +113,8 @@ class App(Tk):
         self._init_main_menu()
         self._init_labels_and_text_boxes(sidebarFrame)
         
-        profile = ProfileTk(b=[20, 20, 20, 20, 20, 20], waves=4, angle_deg=60)
-        profile.canvas_draw(self.canvas, width=2)
+        profile = ProfileTk(b=[1, 1, 1, 1, 1, 1], waves=8, angle_deg=60)
+        profile.canvas_draw(self.canvas, x0=self.canvas_width/2, y0=self.canvas_height/2, scale=10, width=2)
         self.canvas.itemconfig('b4', fill='yellow')
     
     def _init_canvas(self, parent):

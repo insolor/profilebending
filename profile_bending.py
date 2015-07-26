@@ -4,7 +4,7 @@ from math import pi, sin, cos
 from locale import setlocale, LC_NUMERIC, atof
 setlocale(LC_NUMERIC, '')
 
-sys.path.append('../../SDXF')
+#sys.path.append('../../SDXF')
 import sdxf
 
 

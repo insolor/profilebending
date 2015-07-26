@@ -7,10 +7,10 @@ class ProfileTk(Profile):
     def __init__(self, **kwargs):
         Profile.__init__(self, **kwargs)
 
-    def canvas_draw(self, parent, x0=0, y0=0, scale=1, **common):
-        def arc(parent, center, radius, start, extent, **common):
+    def canvas_draw(self, parent, x0=0, y0=0, scale=1, **kwargs):
+        def arc(parent, center, radius, start, extent, **kwargs):
             parent.create_arc((center[0]-radius, center[1]-radius, center[0]+radius, center[1]+radius),
-                start=start, extent=extent, style=ARC, **common)
+                              start=start, extent=extent, style=ARC, **kwargs)
         
         self.calculate_profile()
         # d = []
@@ -27,14 +27,14 @@ class ProfileTk(Profile):
         # Left edge segment B0 (horizontal)
         if b[0] > 0:
             x1 = x + b[0]
-            parent.create_line([(x, y), (x1, y)], tag='b0', **common)
+            parent.create_line([(x, y), (x1, y)], tag='b0', **kwargs)
             x = x1
         
         for j in range(self.waves):
             # Segment B1 (arc)
             if b[1] > 0:
                 arc(parent, center=(x, y+r1), radius=r1,
-                    start=90, extent=-self.angle_deg, tag='b1', **common)
+                    start=90, extent=-self.angle_deg, tag='b1', **kwargs)
                 x += w1
                 y += h1
 
@@ -42,7 +42,7 @@ class ProfileTk(Profile):
             if b[2] > 0:
                 x1 = x + w2
                 y1 = y + h2
-                parent.create_line([(x, y), (x1, y1)], tag='b2', **common)
+                parent.create_line([(x, y), (x1, y1)], tag='b2', **kwargs)
                 x = x1
                 y = y1
 
@@ -51,14 +51,14 @@ class ProfileTk(Profile):
                 x1 = x + w3
                 y1 = y + h3
                 arc(parent, center=(x1, y1-r1), radius=r1,
-                    start=270, extent=-self.angle_deg, tag='b3', **common)
+                    start=270, extent=-self.angle_deg, tag='b3', **kwargs)
                 x = x1
                 y = y1
 
             # Segment B4 (horizontal)
             if b[4] > 0:
                 x1 = x + b[4]
-                parent.create_line([(x, y), (x1, y)], tag='b4', **common)
+                parent.create_line([(x, y), (x1, y)], tag='b4', **kwargs)
                 x = x1
 
             # Symmetrically against B4 segment
@@ -67,7 +67,7 @@ class ProfileTk(Profile):
                 x1 = x + w3
                 y1 = y - h3
                 arc(parent, center=(x, y-r1), radius=r1,
-                    start=270, extent=self.angle_deg, tag='b3', **common)
+                    start=270, extent=self.angle_deg, tag='b3', **kwargs)
                 x = x1
                 y = y1
 
@@ -75,7 +75,7 @@ class ProfileTk(Profile):
             if b[2] > 0:
                 x1 = x + w2
                 y1 = y - h2
-                parent.create_line([(x, y), (x1, y1)], tag='b2', **common)
+                parent.create_line([(x, y), (x1, y1)], tag='b2', **kwargs)
                 x = x1
                 y = y1
 
@@ -84,20 +84,20 @@ class ProfileTk(Profile):
                 x1 = x + w1
                 y1 = y - h1
                 arc(parent, center=(x1, y1+r1), radius=r1,
-                    start=90, extent=self.angle_deg, tag='b1', **common)
+                    start=90, extent=self.angle_deg, tag='b1', **kwargs)
                 x = x1
                 y = y1
 
             # Segment B5 (horizontal)
             if j < self.waves-1 and b[5] > 0:
                 x1 = x + b[5]
-                parent.create_line([(x, y), (x1, y)], tag='b5', **common)
+                parent.create_line([(x, y), (x1, y)], tag='b5', **kwargs)
                 x = x1
 
         # Right edge segment B0
         if b[0] > 0:
             x1 = x + b[0]
-            parent.create_line([(x, y), (x1, y)], tag='b0', **common)
+            parent.create_line([(x, y), (x1, y)], tag='b0', **kwargs)
 
 
 class App(Tk):

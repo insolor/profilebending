@@ -106,20 +106,21 @@ class App(Tk):
         self.canvas_height = 480
         
         Tk.__init__(self)
-        sidebarFrame = Frame(self, width=160)
-        canvasFrame = Frame(self, width=self.canvas_width, height=self.canvas_height)
-        sidebarFrame.pack(side='left', fill='y')
-        canvasFrame.pack(side='right', fill='both', expand=1)
+        sidebar_frame = Frame(self, width=160)
+        canvas_frame = Frame(self, width=self.canvas_width, height=self.canvas_height)
+        sidebar_frame.pack(side='left', fill='y')
+        canvas_frame.pack(side='right', fill='both', expand=1)
         
         self._init_main_menu()
-        self._init_controls(sidebarFrame)
-        self.canvas = self._init_canvas(canvasFrame)
+        self._init_controls(sidebar_frame)
+        self.canvas = self._init_canvas(canvas_frame)
         
         self.profile = ProfileTk(b=[1 for _ in range(6)], waves=5, angle_deg=60)
         self.profile.canvas_draw(self.canvas, x0=self.canvas_width/2, y0=self.canvas_height/2, scale=20, width=2)
         # self.canvas.itemconfig('b4', fill='yellow')
-    
-    def _init_canvas(self, parent):
+
+    @staticmethod
+    def _init_canvas(parent):
         canvas = Canvas(parent, width=640, height=480, bg="white")
         canvas.pack(side='top', fill='both', expand=1)
         return canvas
@@ -136,7 +137,7 @@ class App(Tk):
     def paint_by_tag(self, tag, color):
         items = self.canvas.find_withtag(tag)
         for item in items:
-            if self.canvas.type(item)=='line':
+            if self.canvas.type(item) == 'line':
                 self.canvas.itemconfig(item, fill=color)
             else:
                 self.canvas.itemconfig(item, outline=color)

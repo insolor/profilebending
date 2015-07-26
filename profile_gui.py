@@ -103,24 +103,25 @@ class App(Tk):
     def __init__(self):
         self.canvas_width = 640
         self.canvas_height = 480
+        
         Tk.__init__(self)
         sidebarFrame = Frame(self, width=160)
         canvasFrame = Frame(self, width=self.canvas_width, height=self.canvas_height)
         sidebarFrame.pack(side='left', fill='y')
         canvasFrame.pack(side='right', fill='both', expand=1)
         
-        self._init_canvas(canvasFrame)
         self._init_main_menu()
-        self._init_labels_and_text_boxes(sidebarFrame)
+        self._init_controls(sidebarFrame)
+        self.canvas = self._init_canvas(canvasFrame)
         
-        profile = ProfileTk(b=[1, 1, 1, 1, 1, 1], waves=8, angle_deg=60)
-        profile.canvas_draw(self.canvas, x0=self.canvas_width/2, y0=self.canvas_height/2, scale=10, width=2)
-        self.canvas.itemconfig('b4', fill='yellow')
+        self.profile = ProfileTk(b=[1 for _ in range(6)], waves=5, angle_deg=60)
+        self.profile.canvas_draw(self.canvas, x0=self.canvas_width/2, y0=self.canvas_height/2, scale=20, width=2)
+        # self.canvas.itemconfig('b4', fill='yellow')
     
     def _init_canvas(self, parent):
-        self.canvas = Canvas(parent, width=640, height=480, bg="white")
-        # self.imgobj = self.canvas.create_image(0, 0)
-        self.canvas.pack(side='top', fill='both', expand=1)
+        canvas = Canvas(parent, width=640, height=480, bg="white")
+        canvas.pack(side='top', fill='both', expand=1)
+        return canvas
     
     def _init_main_menu(self):
         main_menu = Menu(self)
@@ -130,8 +131,27 @@ class App(Tk):
         # file_menu.add_command(label="Open", command=self.show_img)
         # file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.destroy)
-        
-    def _init_labels_and_text_boxes(self, parent):
+    
+    def paint_by_tag(self, tag, color):
+        items = self.canvas.find_withtag(tag)
+        for item in items:
+            if self.canvas.type(item)=='line':
+                self.canvas.itemconfig(item, fill=color)
+            else:
+                self.canvas.itemconfig(item, outline=color)
+    
+    def _on_focus_in_text_box(self, event):
+        b_index = self.entry_b.index(event.widget)
+        self.paint_by_tag('b%d' % b_index, color='yellow')
+    
+    def _on_focus_out_text_box(self, event):
+        b_index = self.entry_b.index(event.widget)
+        self.paint_by_tag('b%d' % b_index, color='black')
+    
+    def _button_action(self, event):
+        pass
+    
+    def _init_controls(self, parent):
         # Create labels and text boxes for b-parameters
         self.entry_b = []
         row = 1
@@ -145,6 +165,8 @@ class App(Tk):
             label.grid(row=row, column=1)
             self.entry_b.append(Entry(parent))
             self.entry_b[-1].grid(row=row, column=2)
+            self.entry_b[-1].bind('<FocusIn>', self._on_focus_in_text_box)
+            self.entry_b[-1].bind('<FocusOut>', self._on_focus_out_text_box)
             row += 1
         
         row += 1
@@ -186,6 +208,12 @@ class App(Tk):
         label.grid(row=row, column=1)
         self.entry_amax = Entry(parent)
         self.entry_amax.grid(row=row, column=2)
+        
+        row += 1
+        
+        button = Button(parent, text='Рассчитать')
+        button.bind('<1>', self._button_action)
+        button.grid(row=row, column=1, columnspan=2)
 
 app = App()
 app.mainloop()

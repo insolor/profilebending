@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter.ttk import *
-from profile import *
+from profile_bending import *
+
 
 class ProfileTk(Profile):
     def __init__(self, **kwargs):

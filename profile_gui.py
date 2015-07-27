@@ -115,35 +115,98 @@ class App(Tk):
         self.canvas_width = 640
         self.canvas_height = 480
 
+        def init_canvas(parent):
+            canvas = Canvas(parent, width=640, height=480, bg=canvas_background)
+            canvas.pack(side='top', fill='both', expand=1)
+            return canvas
+
+        def init_main_menu():
+            main_menu = Menu(self)
+            self.config(menu=main_menu)
+            file_menu = Menu(main_menu)
+            main_menu.add_cascade(label="File", menu=file_menu)
+            # file_menu.add_command(label="Open", command=self.show_img)
+            # file_menu.add_separator()
+            file_menu.add_command(label="Exit", command=self.destroy)
+
+        def init_controls(parent):
+            # Create labels and text boxes for b-parameters
+            self.entry_b = []
+            row = 1
+
+            label = Label(parent, text='Длины участков:')
+            label.grid(row=row, column=1, columnspan=2)
+            row += 1
+
+            for i in range(6):
+                label = Label(parent, text='B%d =' % i)
+                label.grid(row=row, column=1)
+                self.entry_b.append(Entry(parent))
+                self.entry_b[-1].grid(row=row, column=2)
+                self.entry_b[-1].bind('<FocusIn>', self._on_focus_in_text_box)
+                self.entry_b[-1].bind('<FocusOut>', self._on_focus_out_text_box)
+                row += 1
+
+            row += 1
+
+            label = Label(parent, text='Количество волн:')
+            label.grid(row=row, column=1, columnspan=2)
+            row += 1
+            label = Label(parent, text='N =')
+            label.grid(row=row, column=1)
+            self.entry_waves = Entry(parent)
+            self.entry_waves.grid(row=row, column=2)
+
+            row += 1
+
+            label = Label(parent, text='Количество клетей:')
+            label.grid(row=row, column=1, columnspan=2)
+            row += 1
+            label = Label(parent, text='M =')
+            label.grid(row=row, column=1)
+            self.entry_m = Entry(parent)
+            self.entry_m.grid(row=row, column=2)
+
+            row += 1
+
+            label = Label(parent, text='Начальный угол:')
+            label.grid(row=row, column=1, columnspan=2)
+            row += 1
+            label = Label(parent, text='Amin =')
+            label.grid(row=row, column=1)
+            self.entry_amin = Entry(parent)
+            self.entry_amin.grid(row=row, column=2)
+
+            row += 1
+
+            label = Label(parent, text='Конечный угол:')
+            label.grid(row=row, column=1, columnspan=2)
+            row += 1
+            label = Label(parent, text='Amax =')
+            label.grid(row=row, column=1)
+            self.entry_amax = Entry(parent)
+            self.entry_amax.grid(row=row, column=2)
+
+            row += 1
+
+            button = Button(parent, text='Рассчитать')
+            button.bind('<1>', self._button_action)
+            button.grid(row=row, column=1, columnspan=2)
+
         Tk.__init__(self)
         sidebar_frame = Frame(self, width=160)
         canvas_frame = Frame(self, width=self.canvas_width, height=self.canvas_height)
         sidebar_frame.pack(side='left', fill='y')
         canvas_frame.pack(side='right', fill='both', expand=1)
         
-        self._init_main_menu()
-        self._init_controls(sidebar_frame)
-        self.canvas = self._init_canvas(canvas_frame)
+        init_main_menu()
+        init_controls(sidebar_frame)
+        self.canvas = init_canvas(canvas_frame)
 
         self.profile = ProfileTk(b=[1 for _ in range(6)], waves=3, angle_deg=60)
         self.profile.canvas_draw(self.canvas, x0=self.canvas_width/2, y0=self.canvas_height/2, scale=20, width=2,
                                  outline=line_color)
         self.canvas.bind('<1>', self._on_click_on_canvas)
-
-    @staticmethod
-    def _init_canvas(parent):
-        canvas = Canvas(parent, width=640, height=480, bg=canvas_background)
-        canvas.pack(side='top', fill='both', expand=1)
-        return canvas
-    
-    def _init_main_menu(self):
-        main_menu = Menu(self)
-        self.config(menu=main_menu)
-        file_menu = Menu(main_menu)
-        main_menu.add_cascade(label="File", menu=file_menu)
-        # file_menu.add_command(label="Open", command=self.show_img)
-        # file_menu.add_separator()
-        file_menu.add_command(label="Exit", command=self.destroy)
     
     def paint_by_tag(self, tag, color):
         items = self.canvas.find_withtag(tag)
@@ -175,70 +238,6 @@ class App(Tk):
                 tags.remove(CURRENT)
             index = int(tags[0][1])
             self.entry_b[index].focus_set()
-
-    def _init_controls(self, parent):
-        # Create labels and text boxes for b-parameters
-        self.entry_b = []
-        row = 1
-        
-        label = Label(parent, text='Длины участков:')
-        label.grid(row=row, column=1, columnspan=2)
-        row += 1
-        
-        for i in range(6):
-            label = Label(parent, text='B%d =' % i)
-            label.grid(row=row, column=1)
-            self.entry_b.append(Entry(parent))
-            self.entry_b[-1].grid(row=row, column=2)
-            self.entry_b[-1].bind('<FocusIn>', self._on_focus_in_text_box)
-            self.entry_b[-1].bind('<FocusOut>', self._on_focus_out_text_box)
-            row += 1
-        
-        row += 1
-        
-        label = Label(parent, text='Количество волн:')
-        label.grid(row=row, column=1, columnspan=2)
-        row += 1
-        label = Label(parent, text='N =')
-        label.grid(row=row, column=1)
-        self.entry_waves = Entry(parent)
-        self.entry_waves.grid(row=row, column=2)
-        
-        row += 1
-        
-        label = Label(parent, text='Количество клетей:')
-        label.grid(row=row, column=1, columnspan=2)
-        row += 1
-        label = Label(parent, text='M =')
-        label.grid(row=row, column=1)
-        self.entry_m = Entry(parent)
-        self.entry_m.grid(row=row, column=2)
-        
-        row += 1
-        
-        label = Label(parent, text='Начальный угол:')
-        label.grid(row=row, column=1, columnspan=2)
-        row += 1
-        label = Label(parent, text='Amin =')
-        label.grid(row=row, column=1)
-        self.entry_amin = Entry(parent)
-        self.entry_amin.grid(row=row, column=2)
-        
-        row += 1
-        
-        label = Label(parent, text='Конечный угол:')
-        label.grid(row=row, column=1, columnspan=2)
-        row += 1
-        label = Label(parent, text='Amax =')
-        label.grid(row=row, column=1)
-        self.entry_amax = Entry(parent)
-        self.entry_amax.grid(row=row, column=2)
-        
-        row += 1
-        
-        button = Button(parent, text='Рассчитать')
-        button.bind('<1>', self._button_action)
-        button.grid(row=row, column=1, columnspan=2)
 
 app = App()
 app.mainloop()

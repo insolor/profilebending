@@ -114,10 +114,10 @@ class App(Tk):
         self._init_main_menu()
         self._init_controls(sidebar_frame)
         self.canvas = self._init_canvas(canvas_frame)
-        
-        self.profile = ProfileTk(b=[1 for _ in range(6)], waves=5, angle_deg=60)
+
+        self.profile = ProfileTk(b=[1 for _ in range(6)], waves=3, angle_deg=60)
         self.profile.canvas_draw(self.canvas, x0=self.canvas_width/2, y0=self.canvas_height/2, scale=20, width=2)
-        # self.canvas.itemconfig('b4', fill='yellow')
+        self.canvas.tag_bind(ALL, '<1>', self._on_segment_click)
 
     @staticmethod
     def _init_canvas(parent):
@@ -152,7 +152,13 @@ class App(Tk):
     
     def _button_action(self, event):
         pass
-    
+
+    def _on_segment_click(self, event):
+        tags = list(self.canvas.gettags(CURRENT))
+        tags.remove(CURRENT)
+        index = int(tags[0][1])
+        self.entry_b[index].focus_set()
+
     def _init_controls(self, parent):
         # Create labels and text boxes for b-parameters
         self.entry_b = []

@@ -8,8 +8,8 @@ class ProfileTk(Profile):
         Profile.__init__(self, **kwargs)
 
     @staticmethod
-    def arc(parent, center, radius, start, extent, **kwargs):
-        parent.create_arc((center[0]-radius, center[1]-radius, center[0]+radius, center[1]+radius),
+    def arc(canvas, center, radius, start, extent, **kwargs):
+        canvas.create_arc((center[0]-radius, center[1]-radius, center[0]+radius, center[1]+radius),
                           start=start, extent=extent, style=ARC, **kwargs)
 
     def canvas_draw(self, canvas, x0=0, y0=0, scale=1, **kwargs):

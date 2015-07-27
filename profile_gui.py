@@ -12,7 +12,7 @@ class ProfileTk(Profile):
         parent.create_arc((center[0]-radius, center[1]-radius, center[0]+radius, center[1]+radius),
                           start=start, extent=extent, style=ARC, **kwargs)
 
-    def canvas_draw(self, parent, x0=0, y0=0, scale=1, **kwargs):
+    def canvas_draw(self, canvas, x0=0, y0=0, scale=1, **kwargs):
         self.calculate_profile()
 
         arc_kwargs = dict(kwargs)
@@ -32,13 +32,13 @@ class ProfileTk(Profile):
         # Left edge segment B0 (horizontal)
         if b[0] > 0:
             x1 = x + b[0]
-            parent.create_line([(x, y), (x1, y)], tag='b0', **kwargs)
+            canvas.create_line([(x, y), (x1, y)], tag='b0', **kwargs)
             x = x1
         
         for j in range(self.waves):
             # Segment B1 (arc)
             if b[1] > 0:
-                self.arc(parent, center=(x, y+r1), radius=r1,
+                self.arc(canvas, center=(x, y+r1), radius=r1,
                          start=90, extent=-self.angle_deg, tag='b1', **arc_kwargs)
                 x += w1
                 y += h1
@@ -47,7 +47,7 @@ class ProfileTk(Profile):
             if b[2] > 0:
                 x1 = x + w2
                 y1 = y + h2
-                parent.create_line([(x, y), (x1, y1)], tag='b2', **kwargs)
+                canvas.create_line([(x, y), (x1, y1)], tag='b2', **kwargs)
                 x = x1
                 y = y1
 
@@ -55,7 +55,7 @@ class ProfileTk(Profile):
             if b[3] > 0:
                 x1 = x + w3
                 y1 = y + h3
-                self.arc(parent, center=(x1, y1-r1), radius=r1,
+                self.arc(canvas, center=(x1, y1-r1), radius=r1,
                          start=270, extent=-self.angle_deg, tag='b3',  **arc_kwargs)
                 x = x1
                 y = y1
@@ -63,7 +63,7 @@ class ProfileTk(Profile):
             # Segment B4 (horizontal)
             if b[4] > 0:
                 x1 = x + b[4]
-                parent.create_line([(x, y), (x1, y)], tag='b4', **kwargs)
+                canvas.create_line([(x, y), (x1, y)], tag='b4', **kwargs)
                 x = x1
 
             # Symmetrically against B4 segment
@@ -71,7 +71,7 @@ class ProfileTk(Profile):
             if b[3] > 0:
                 x1 = x + w3
                 y1 = y - h3
-                self.arc(parent, center=(x, y-r1), radius=r1,
+                self.arc(canvas, center=(x, y-r1), radius=r1,
                          start=270, extent=self.angle_deg, tag='b3', **arc_kwargs)
                 x = x1
                 y = y1
@@ -80,7 +80,7 @@ class ProfileTk(Profile):
             if b[2] > 0:
                 x1 = x + w2
                 y1 = y - h2
-                parent.create_line([(x, y), (x1, y1)], tag='b2', **kwargs)
+                canvas.create_line([(x, y), (x1, y1)], tag='b2', **kwargs)
                 x = x1
                 y = y1
 
@@ -88,7 +88,7 @@ class ProfileTk(Profile):
             if b[1] > 0:
                 x1 = x + w1
                 y1 = y - h1
-                self.arc(parent, center=(x1, y1+r1), radius=r1,
+                self.arc(canvas, center=(x1, y1+r1), radius=r1,
                          start=90, extent=self.angle_deg, tag='b1', **arc_kwargs)
                 x = x1
                 y = y1
@@ -96,18 +96,27 @@ class ProfileTk(Profile):
             # Segment B5 (horizontal)
             if j < self.waves-1 and b[5] > 0:
                 x1 = x + b[5]
-                parent.create_line([(x, y), (x1, y)], tag='b5', **kwargs)
+                canvas.create_line([(x, y), (x1, y)], tag='b5', **kwargs)
                 x = x1
 
         # Right edge segment B0
         if b[0] > 0:
             x1 = x + b[0]
-            parent.create_line([(x, y), (x1, y)], tag='b0', **kwargs)
+            canvas.create_line([(x, y), (x1, y)], tag='b0', **kwargs)
 
 
 canvas_background = 'gray'
 line_color = 'black'
 line_highlight = 'yellow'
+
+
+def paint_by_tag(canvas, tag, color):
+    items = canvas.find_withtag(tag)
+    for item in items:
+        if canvas.type(item) == 'line':
+            canvas.itemconfig(item, fill=color)
+        else:
+            canvas.itemconfig(item, outline=color)
 
 
 class App(Tk):
@@ -207,22 +216,14 @@ class App(Tk):
         self.profile.canvas_draw(self.canvas, x0=self.canvas_width/2, y0=self.canvas_height/2, scale=20, width=2,
                                  outline=line_color)
         self.canvas.bind('<1>', self._on_click_on_canvas)
-    
-    def paint_by_tag(self, tag, color):
-        items = self.canvas.find_withtag(tag)
-        for item in items:
-            if self.canvas.type(item) == 'line':
-                self.canvas.itemconfig(item, fill=color)
-            else:
-                self.canvas.itemconfig(item, outline=color)
-    
+
     def _on_focus_in_text_box(self, event):
         b_index = self.entry_b.index(event.widget)
-        self.paint_by_tag('b%d' % b_index, color=line_highlight)
+        paint_by_tag(self.canvas, 'b%d' % b_index, color=line_highlight)
     
     def _on_focus_out_text_box(self, event):
         b_index = self.entry_b.index(event.widget)
-        self.paint_by_tag('b%d' % b_index, color=line_color)
+        paint_by_tag(self.canvas, 'b%d' % b_index, color=line_color)
     
     def _button_action(self, event):
         pass

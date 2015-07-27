@@ -128,7 +128,7 @@ class App(Tk):
         self.profile = ProfileTk(b=[1 for _ in range(6)], waves=3, angle_deg=60)
         self.profile.canvas_draw(self.canvas, x0=self.canvas_width/2, y0=self.canvas_height/2, scale=20, width=2,
                                  outline=line_color)
-        self.canvas.tag_bind(ALL, '<1>', self._on_segment_click)
+        self.canvas.bind('<1>', self._on_click_on_canvas)
 
     @staticmethod
     def _init_canvas(parent):
@@ -164,11 +164,17 @@ class App(Tk):
     def _button_action(self, event):
         pass
 
-    def _on_segment_click(self, _):
-        tags = list(self.canvas.gettags(CURRENT))
-        tags.remove(CURRENT)
-        index = int(tags[0][1])
-        self.entry_b[index].focus_set()
+    def _on_click_on_canvas(self, event):
+        overlap_range = 10
+        overlap_items = self.canvas.find_overlapping(event.x-overlap_range, event.y-overlap_range,
+                                                     event.x+overlap_range, event.y+overlap_range)
+        if len(overlap_items) >= 1:
+            closest_item = self.canvas.find_closest(event.x, event.y)[0]
+            tags = list(self.canvas.gettags(closest_item))
+            if CURRENT in tags:
+                tags.remove(CURRENT)
+            index = int(tags[0][1])
+            self.entry_b[index].focus_set()
 
     def _init_controls(self, parent):
         # Create labels and text boxes for b-parameters

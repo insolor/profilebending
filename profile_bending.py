@@ -45,7 +45,6 @@ def secant_method(func, a1, a2, eps, stop=1000):
 
 class Angle(object):
     def __init__(self, deg=None, rad=None):
-        print(deg, rad)
         if deg is not None:
             self.__deg = deg
             self.__rad = deg/180*pi

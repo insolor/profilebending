@@ -43,17 +43,38 @@ def secant_method(func, a1, a2, eps, stop=1000):
         n += 1
 
 
+class Angle(object):
+    def __init__(self, deg=None, rad=None):
+        print(deg, rad)
+        if deg is not None:
+            self.__deg = deg
+            self.__rad = deg/180*pi
+        elif rad is not None:
+            self.__rad = rad
+            self.__deg = rad*180/pi
+        else:
+            self.__rad = 0
+            self.__deg = 0
+
+    @property
+    def rad(self):
+        return self.__rad
+
+    @property
+    def deg(self):
+        return self.__deg
+
+    def __float__(self):
+        return self.__rad
+
+
 class Profile(object):
-    def __init__(self, b, waves, angle_deg=None, angle=None):
+    def __init__(self, b, waves, angle):
         self.b = b
         self.waves = waves
         
-        if angle_deg is not None:
-            self.angle_deg = angle_deg
-            self.angle = angle_deg/180*pi
-        else:
-            self.angle = angle
-            self.angle_deg = angle/pi*180
+        assert(type(angle) is Angle)
+        self.angle = angle
         
         self.calculate_profile()
 
@@ -61,8 +82,8 @@ class Profile(object):
         sina = sin(self.angle)
         cosa = cos(self.angle)
 
-        self.r1 = self.b[1] / self.angle
-        self.r3 = self.b[3] / self.angle
+        self.r1 = self.b[1] / self.angle.rad
+        self.r3 = self.b[3] / self.angle.rad
 
         self.h1 = self.r1 * (1 - cosa)
         self.h2 = self.b[2] * sina
@@ -97,7 +118,7 @@ class Profile(object):
             if self.b[1] > 0:
                 x1 = x + self.w1
                 d.append(sdxf.Arc(center=(x, self.h-self.r1), radius=self.r1,
-                                  startAngle=90-self.angle_deg, endAngle=90, **common))
+                                  startAngle=90-self.angle.deg, endAngle=90, **common))
                 x = x1
 
             # Segment B2 (inclined)
@@ -110,7 +131,7 @@ class Profile(object):
             if self.b[3] > 0:
                 x1 = x + self.w3
                 d.append(sdxf.Arc(center=(x1, self.r3), radius=self.r3,
-                                  startAngle=270-self.angle_deg, endAngle=270, **common))
+                                  startAngle=270-self.angle.deg, endAngle=270, **common))
                 x = x1
 
             # Segment B4 (horizontal)
@@ -124,7 +145,7 @@ class Profile(object):
             if self.b[3] > 0:
                 x1 = x + self.w3
                 d.append(sdxf.Arc(center=(x, self.r3), radius=self.r3,
-                                  startAngle=270, endAngle=270+self.angle_deg, **common))
+                                  startAngle=270, endAngle=270+self.angle.deg, **common))
                 x = x1
 
             # Segment B2 (inclined)
@@ -137,7 +158,7 @@ class Profile(object):
             if self.b[1] > 0:
                 x1 = x + self.w1
                 d.append(sdxf.Arc(center=(x1, self.h-self.r1), radius=self.r1,
-                                  startAngle=90, endAngle=90+self.angle_deg, **common))
+                                  startAngle=90, endAngle=90+self.angle.deg, **common))
                 x = x1
 
             # Segment B5 (horizontal)
@@ -154,7 +175,7 @@ class Profile(object):
         return d
 
     def print(self):
-        print('Ag = %-6.2f' % self.angle_deg)
+        print('Ag = %-6.2f' % self.angle.deg)
         print('R1 = %-6.2f    R3 = %-6.2f' % (self.r1, self.r3))
         print('H  = %-6.2f    H1 = %-6.2f    H2 = %-6.2f    H3 = %-6.2f' %
               (self.h, self.h1, self.h2, self.h3))
@@ -177,38 +198,36 @@ def main():
                         cond=lambda x: 1 < x < 1000 and int(x) == x,
                         msg_on_false_cond='Количество клетей должно быть целым числом больше единицы.'))
 
-    ag = input_float('Введите начальный угол Amin = ',
-                     cond=lambda x: 0 <= x < 180,
-                     msg_on_false_cond='Начальный угол должен быть больше или равен нулю и меньше 180 градусов.')
+    amin = Angle(
+        deg=input_float('Введите начальный угол Amin = ',
+                        cond=lambda x: 0 <= x < 180,
+                        msg_on_false_cond='Начальный угол должен быть больше или равен нулю и меньше 180 градусов.'))
 
-    amin = ag/180*pi
-
-    ag = input_float('Введите конечный угол Amax = ',
-                     cond=lambda x: amin < x < 180,
-                     msg_on_false_cond='Конечный угол должен быть больше начального, но меньше 180 градусов.')
-
-    amax = ag/180*pi
+    amax = Angle(
+        deg=input_float('Введите конечный угол Amax = ',
+                        cond=lambda x: amin.deg < x < 180,
+                        msg_on_false_cond='Конечный угол должен быть больше начального, но меньше 180 градусов.'))
 
     eps = 1e-5
 
     angles = []
 
-    if amin == 0:
-        amin = sys.float_info.epsilon
+    if amin.rad == 0:
+        amin = Angle(rad=sys.float_info.epsilon)
         M += 1  # Не считаем полностью развернутый лист клетью
     else:
         angles.append(amin)
     
     # При минимальном угле альфа получается максимальная ширина и наоборот
-    Wmax = width(b, amin)
-    Wmin = width(b, amax)
+    Wmax = width(b, amin.rad)
+    Wmin = width(b, amax.rad)
 
     DW = (Wmax-Wmin)/(M-1)
     W = Wmax - DW
 
     a = amin
     for i in range(M-2):
-        a = secant_method(lambda x: width(b, x)-W, a, amax, eps)
+        a = Angle(rad=secant_method(lambda x: width(b, x)-W, a.rad, amax.rad, eps))
         W -= DW
         angles.append(a)
     angles.append(amax)

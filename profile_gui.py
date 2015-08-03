@@ -248,7 +248,8 @@ class App(Tk):
             button.bind('<1>', self._button_action)
             button.grid(row=row, column=1, columnspan=2)
 
-        Tk.__init__(self)
+        super().__init__()
+
         self.b = [1.0 for _ in range(6)]
         self.waves = 3
         self.amin = Angle(deg=0)

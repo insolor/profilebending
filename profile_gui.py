@@ -283,7 +283,7 @@ class App(Tk):
             self.vars[event.widget].get()
         except ValueError:
             # @TODO: Restore original content of the text box
-            messagebox.showerror('Error', 'Not a number')
+            messagebox.showerror('Ошибка', 'Неправильный формат числа с плавающей точкой')
             event.widget.focus_set()
     
     def _button_action(self, event):

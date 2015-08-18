@@ -293,7 +293,7 @@ class App(Tk):
         overlap_range = 10
         overlap_items = self.canvas.find_overlapping(event.x-overlap_range, event.y-overlap_range,
                                                      event.x+overlap_range, event.y+overlap_range)
-        if len(overlap_items) >= 1:
+        if overlap_items:
             closest_item = self.canvas.find_closest(event.x, event.y)[0]
             tags = list(self.canvas.gettags(closest_item))
             if CURRENT in tags:

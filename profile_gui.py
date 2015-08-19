@@ -59,7 +59,7 @@ class ProfileTk(Profile):
             if b[3] > 0:
                 x1 = x + w3
                 y1 = y + h3
-                self.arc(canvas, center=(x1, y1-r1), radius=r1,
+                self.arc(canvas, center=(x1, y1-r3), radius=r3,
                          start=270, extent=-self.angle.deg, tag='b3',  **arc_kwargs)
                 x = x1
                 y = y1
@@ -75,7 +75,7 @@ class ProfileTk(Profile):
             if b[3] > 0:
                 x1 = x + w3
                 y1 = y - h3
-                self.arc(canvas, center=(x, y-r1), radius=r1,
+                self.arc(canvas, center=(x, y-r3), radius=r3,
                          start=270, extent=self.angle.deg, tag='b3', **arc_kwargs)
                 x = x1
                 y = y1

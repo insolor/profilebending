@@ -140,7 +140,7 @@ class App(Tk):
             canvas = Canvas(parent, width=640, height=480, bg=canvas_background)
             canvas.pack(side='top', fill='both', expand=1)
             canvas.bind('<1>', self._on_click_on_canvas)
-            canvas.bind('<Configure>', self._on_resize_canvas))
+            canvas.bind('<Configure>', self._on_resize_canvas)
             return canvas
 
         def init_main_menu():
@@ -166,10 +166,9 @@ class App(Tk):
                 label = Label(parent, text='B%d =' % i)
                 label.grid(row=row, column=1)
 
-                var = LocaleDoubleVar(value=self.b[i])
+                var = LocaleDoubleVar(value=self.params['b'][i])
                 entry = Entry(parent, textvariable=var)
                 self.vars[entry] = var
-                self.vars['b%d' % i] = var
                 entry.grid(row=row, column=2)
                 entry.bind('<FocusIn>', self._on_focus_in_text_box)
                 entry.bind('<FocusOut>', self._on_focus_out_text_box)
@@ -187,13 +186,13 @@ class App(Tk):
             label = Label(parent, text='N =')
             label.grid(row=row, column=1)
 
-            var = IntVar(value=self.waves)
+            var = IntVar(value=self.params['waves'])
             self.entry_waves = Entry(parent, textvariable=var)
             self.vars[self.entry_waves] = var
-            self.vars['waves'] = var
             self.entry_waves.grid(row=row, column=2)
             self.entry_waves.bind('<FocusOut>', self._on_focus_out_text_box)
             self.entry_waves.bind('<Return>', self._on_focus_out_text_box)
+            self.entry_waves.tag = 'waves'
 
             row += 1
 
@@ -205,13 +204,13 @@ class App(Tk):
             label = Label(parent, text='M =')
             label.grid(row=row, column=1)
 
-            var = IntVar(value=self.m)
+            var = IntVar(value=self.params['m'])
             self.entry_m = Entry(parent, textvariable=var)
             self.vars[self.entry_m] = var
-            self.vars['m'] = var
             self.entry_m.grid(row=row, column=2)
             self.entry_m.bind('<FocusOut>', self._on_focus_out_text_box)
             self.entry_m.bind('<Return>', self._on_focus_out_text_box)
+            self.entry_m.tag = 'm'
 
             row += 1
 
@@ -223,13 +222,13 @@ class App(Tk):
             label = Label(parent, text='Amin =')
             label.grid(row=row, column=1)
 
-            var = LocaleDoubleVar(value=self.amin.deg)
+            var = LocaleDoubleVar(value=self.params['amin'].deg)
             self.entry_amin = Entry(parent, textvariable=var)
             self.vars[self.entry_amin] = var
-            self.vars['amin'] = var
             self.entry_amin.grid(row=row, column=2)
             self.entry_amin.bind('<FocusOut>', self._on_focus_out_text_box)
             self.entry_amin.bind('<Return>', self._on_focus_out_text_box)
+            self.entry_amin.tag = 'amin'
 
             row += 1
 
@@ -241,13 +240,13 @@ class App(Tk):
             label = Label(parent, text='Amax =')
             label.grid(row=row, column=1)
 
-            var = LocaleDoubleVar(value=self.amax.deg)
+            var = LocaleDoubleVar(value=self.params['amax'].deg)
             self.entry_amax = Entry(parent, textvariable=var)
             self.vars[self.entry_amax] = var
-            self.vars['amax'] = var
             self.entry_amax.grid(row=row, column=2)
             self.entry_amax.bind('<FocusOut>', self._on_focus_out_text_box)
             self.entry_amax.bind('<Return>', self._on_focus_out_text_box)
+            self.entry_amax.tag = 'amax'
 
             row += 1
 
@@ -256,13 +255,15 @@ class App(Tk):
             button.grid(row=row, column=1, columnspan=2)
 
         super().__init__()
-
-        self.b = [1.0 for _ in range(6)]
-        self.waves = 3
-        self.amin = Angle(deg=0)
-        self.amax = Angle(deg=60)
-        self.m = 10
-
+        
+        self.params = dict(
+            b=[1.0 for _ in range(6)],
+            waves=3,
+            amin=Angle(deg=0),
+            amax=Angle(deg=60),
+            m=10
+        )
+        
         sidebar_frame = Frame(self, width=160)
         canvas_frame = Frame(self, width=self.canvas_width, height=self.canvas_height)
         sidebar_frame.pack(side='left', fill='y')
@@ -272,14 +273,19 @@ class App(Tk):
         init_controls(sidebar_frame)
         self.canvas = init_canvas(canvas_frame)
 
-        self.profile = ProfileTk(b=self.b, waves=self.waves, angle=self.amax)
-        self.profile.canvas_draw(self.canvas, x0=self.canvas_width/2, y0=self.canvas_height/2, scale=20, width=2,
+        self.profile = ProfileTk(b=self.params['b'], waves=self.params['waves'], angle=self.params['amax'])
+        self.redraw_profile()
+
+    def redraw_profile(self):
+        self.canvas.delete(ALL)
+        self.profile.canvas_draw(self.canvas, x0=self.canvas_width/2, y0=self.canvas_height/2,
+                                 scale=(self.canvas_width-40) / self.profile.width, width=2,
                                  outline=line_color)
-    
+
     def _on_resize_canvas(self, event):
         self.canvas_width = event.width
         self.canvas_height = event.height
-        # Redraw profile(s)
+        self.redraw_profile()
     
     def _on_focus_in_text_box(self, event):
         b_index = self.entry_b.index(event.widget)
@@ -291,7 +297,6 @@ class App(Tk):
             paint_by_tag(self.canvas, 'b%d' % b_index, color=line_color)
 
         var = self.vars[event.widget]
-        new_val = None
         try:
             new_val = var.get()
         except ValueError:
@@ -302,40 +307,25 @@ class App(Tk):
         redraw_profile = False
         if event.widget in self.entry_b:
             b_index = self.entry_b.index(event.widget)
-            if new_val != self.b[b_index]:
+            if new_val != self.params['b'][b_index]:
                 redraw_profile = True
-                self.b[b_index] = new_val
-
-        if event.widget is self.entry_waves:
-            if new_val != self.waves:
-                redraw_profile = True
-                self.waves = new_val
-
-        if event.widget is self.entry_m:
-            if new_val != self.m:
-                redraw_profile = False
-                self.m = new_val
-
-        if event.widget is self.entry_amin:
-            if new_val != self.amin.deg:
-                redraw_profile = False
-                self.amin = Angle(deg=new_val)
-
-        if event.widget is self.entry_amax:
-            if new_val != self.amax.deg:
-                redraw_profile = True
-                self.amax = Angle(deg=new_val)
+                self.params['b'][b_index] = new_val
+        elif hasattr(event.widget, 'tag'):
+            if new_val != self.params[event.widget.tag]:
+                redraw_profile = event.widget.tag in {'amax', 'waves'}
+                if event.widget.tag in {'amin', 'amax'}:
+                    self.params[event.widget.tag] = Angle(deg=new_val)
+                else:
+                    self.params[event.widget.tag] = new_val
 
         if redraw_profile:
-            self.canvas.delete(ALL)
-            self.profile.b = self.b
-            self.profile.waves = self.waves
-            self.profile.angle = self.amax
-            self.profile.canvas_draw(self.canvas, x0=self.canvas_width/2, y0=self.canvas_height/2, scale=20, width=2,
-                                     outline=line_color)
+            self.profile.b = self.params['b']
+            self.profile.waves = self.params['waves']
+            self.profile.angle = self.params['amax']
+            self.redraw_profile()
 
         # Highlight a section after redraw
-        if event.keycode == 13:
+        if event.keycode == 13 and event.widget in self.entry_b:
             self._on_focus_in_text_box(event)
     
     def _button_calculate(self, event):

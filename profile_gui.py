@@ -335,6 +335,7 @@ class App(Tk):
         except ValueError:
             messagebox.showerror('Ошибка', 'Неправильный формат числа с плавающей запятой')
             event.widget.focus_set()
+            event.widget.selection_range(0, END)
             return
 
         redraw_profile = False
@@ -371,6 +372,7 @@ class App(Tk):
         except ValueError as err:
             messagebox.showerror('Ошибка', err)
             event.widget.focus_set()
+            event.widget.selection_range(0, END)
             return
 
         if redraw_profile:
@@ -418,7 +420,7 @@ class App(Tk):
         self.redraw_profiles()
 
     def _on_click_on_canvas(self, event):
-        overlap_range = 10
+        overlap_range = 20
         overlap_items = self.canvas.find_overlapping(event.x-overlap_range, event.y-overlap_range,
                                                      event.x+overlap_range, event.y+overlap_range)
         if overlap_items:
@@ -430,6 +432,7 @@ class App(Tk):
             if tags:
                 index = int(tags[0][1])
                 self.entry_b[index].focus_set()
+                self.entry_b[index].selection_range(0, END)
 
 app = App()
 app.mainloop()

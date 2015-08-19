@@ -140,6 +140,7 @@ class App(Tk):
             canvas = Canvas(parent, width=640, height=480, bg=canvas_background)
             canvas.pack(side='top', fill='both', expand=1)
             canvas.bind('<1>', self._on_click_on_canvas)
+            canvas.bind('<Configure>', self._on_resize_canvas))
             return canvas
 
         def init_main_menu():
@@ -274,7 +275,12 @@ class App(Tk):
         self.profile = ProfileTk(b=self.b, waves=self.waves, angle=self.amax)
         self.profile.canvas_draw(self.canvas, x0=self.canvas_width/2, y0=self.canvas_height/2, scale=20, width=2,
                                  outline=line_color)
-
+    
+    def _on_resize_canvas(self, event):
+        self.canvas_width = event.width
+        self.canvas_height = event.height
+        # Redraw profile(s)
+    
     def _on_focus_in_text_box(self, event):
         b_index = self.entry_b.index(event.widget)
         paint_by_tag(self.canvas, 'b%d' % b_index, color=line_highlight)

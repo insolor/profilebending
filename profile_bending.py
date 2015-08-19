@@ -88,7 +88,7 @@ class Profile(object):
         self.h2 = self.b[2] * sina
         self.h3 = self.r3 * (1 - cosa)
 
-        self.h = self.h1 + self.h2 + self.h3
+        self.height = self.h1 + self.h2 + self.h3
 
         self.w1 = self.r1 * sina
         self.w2 = self.b[2] * cosa
@@ -102,6 +102,13 @@ class Profile(object):
             width += self.b[5]*(self.waves-1)
         return width
 
+    @property
+    def flat_width(self):
+        evolvent = 2*self.b[0]+(2*self.b[1]+2*self.b[2]+2*self.b[3]+self.b[4])*self.waves
+        if self.waves > 1:
+            evolvent += self.b[5]*(self.waves-1)
+        return evolvent
+
     def dxf_draw(self, **common):
         d = []
         x = -self.width/2
@@ -109,14 +116,14 @@ class Profile(object):
         # Left edge segment B0 (horizontal)
         if self.b[0] > 0:
             x1 = x + self.b[0]
-            d.append(sdxf.Line(points=[(x, self.h), (x1, self.h)], **common))
+            d.append(sdxf.Line(points=[(x, self.height), (x1, self.height)], **common))
             x = x1
 
         for j in range(self.waves):
             # Segment B1 (arc)
             if self.b[1] > 0:
                 x1 = x + self.w1
-                d.append(sdxf.Arc(center=(x, self.h-self.r1), radius=self.r1,
+                d.append(sdxf.Arc(center=(x, self.height-self.r1), radius=self.r1,
                                   startAngle=90-self.angle.deg, endAngle=90, **common))
                 x = x1
 
@@ -156,20 +163,20 @@ class Profile(object):
             # Segment B1 (arc)
             if self.b[1] > 0:
                 x1 = x + self.w1
-                d.append(sdxf.Arc(center=(x1, self.h-self.r1), radius=self.r1,
+                d.append(sdxf.Arc(center=(x1, self.height-self.r1), radius=self.r1,
                                   startAngle=90, endAngle=90+self.angle.deg, **common))
                 x = x1
 
             # Segment B5 (horizontal)
             if j < self.waves-1 and self.b[5] > 0:
                 x1 = x + self.b[5]
-                d.append(sdxf.Line(points=[(x, self.h), (x1, self.h)], **common))
+                d.append(sdxf.Line(points=[(x, self.height), (x1, self.height)], **common))
                 x = x1
 
         # Right edge segment B0
         if self.b[0] > 0:
             x1 = x + self.b[0]
-            d.append(sdxf.Line(points=[(x, self.h), (x1, self.h)], **common))
+            d.append(sdxf.Line(points=[(x, self.height), (x1, self.height)], **common))
 
         return d
 
@@ -177,7 +184,7 @@ class Profile(object):
         print('Ag = %-6.2f' % self.angle.deg)
         print('R1 = %-6.2f    R3 = %-6.2f' % (self.r1, self.r3))
         print('H  = %-6.2f    H1 = %-6.2f    H2 = %-6.2f    H3 = %-6.2f' %
-              (self.h, self.h1, self.h2, self.h3))
+              (self.height, self.h1, self.h2, self.h3))
         print('W1 = %-6.2f    W2 = %-6.2f    W3 = %-6.2f' % (self.w1, self.w2, self.w3))
 
 

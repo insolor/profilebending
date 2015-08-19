@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter import filedialog
 from tkinter.ttk import *
 import tkinter.messagebox as messagebox
 from profile_bending import *
@@ -259,12 +260,12 @@ class App(Tk):
             row += 1
 
             button = Button(parent, text='Рассчитать')
-            button.bind('<1>', self._button_calculate)
+            button.bind('<1>', self.calculate)
             button.grid(row=row, column=1, columnspan=2)
 
             row += 1
             button = Button(parent, text='Экспорт в файл dxf', state=DISABLED)
-            button.bind('<1>', self._button_export)
+            button.bind('<1>', self.export)
             button.grid(row=row, column=1, columnspan=2)
             self.button_export = button
 
@@ -406,7 +407,7 @@ class App(Tk):
         if event.keycode == 13 and event.widget in self.entry_b:
             self._on_focus_in_text_box(event)
     
-    def _button_calculate(self, _):
+    def calculate(self, _):
         m = self.params['m']
         amin = self.params['amin']
         amax = self.params['amax']
@@ -441,8 +442,21 @@ class App(Tk):
 
         self.button_export.configure(state=NORMAL)
 
-    def _button_export(self, _):
-        pass
+    def export(self, _):
+        filename = filedialog.SaveAs(self, filetypes=[('Файлы DXF', '.dxf')]).show()
+        if filename:
+            d = sdxf.Drawing()
+
+            for i, profile in enumerate(self.calculated_profiles):
+                layer = str(i)
+                d.layers.append(sdxf.Layer(layer))
+                d.extend(profile.dxf_draw(layer=layer))
+
+            if not filename.endswith('.dxf'):
+                filename += '.dxf'
+
+            d.saveas(filename)
+
 
     def _on_click_on_canvas(self, event):
         overlap_range = 20

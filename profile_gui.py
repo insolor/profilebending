@@ -145,7 +145,7 @@ def paint_by_tag(canvas, tag, color):
 class App(Tk):
     def __init__(self):
         def init_canvas(parent):
-            canvas = Canvas(parent, width=640, height=480, bg=canvas_background)
+            canvas = Canvas(parent, width=self.canvas_width, height=self.canvas_height, bg=canvas_background)
             canvas.pack(side='top', fill='both', expand=1)
             canvas.bind('<1>', self._on_click_on_canvas)
             canvas.bind('<Configure>', self._on_resize_canvas)
@@ -262,15 +262,30 @@ class App(Tk):
             button.bind('<1>', self._button_calculate)
             button.grid(row=row, column=1, columnspan=2)
 
+            row += 1
+            button = Button(parent, text='Экспорт в файл dxf', state=DISABLED)
+            button.bind('<1>', self._button_export)
+            button.grid(row=row, column=1, columnspan=2)
+            self.button_export = button
+
+        def init_console(parent):
+            scrollbar = Scrollbar(parent)
+            scrollbar.pack(side='right', fill='y')
+            text_box = Text(parent, height=5)
+            text_box.pack(side='left', fill='both', expand=1)
+            scrollbar['command'] = text_box.yview
+            text_box['yscrollcommand'] = scrollbar.set
+            return text_box
+
         super().__init__()
 
         self.canvas_width = 640
-        self.canvas_height = 480
+        self.canvas_height = 360
         self.baseline = self.canvas_height / 2
         self.border = 40
 
         self.params = dict(
-            b=[1.0 for _ in range(6)],
+            b=[10.0, 1.5, 10.0, 1.5, 10.0, 10.0],
             waves=3,
             amin=Angle(deg=0),
             amax=Angle(deg=60),
@@ -281,12 +296,16 @@ class App(Tk):
 
         sidebar_frame = Frame(self, width=160)
         canvas_frame = Frame(self, width=self.canvas_width, height=self.canvas_height)
+        console_frame = Frame(self)
+
+        console_frame.pack(side='bottom', fill='x')
         sidebar_frame.pack(side='left', fill='y')
         canvas_frame.pack(side='right', fill='both', expand=1)
         
         init_main_menu()
         init_controls(sidebar_frame)
         self.canvas = init_canvas(canvas_frame)
+        self.console = init_console(console_frame)
 
         self.profile = ProfileTk(b=self.params['b'], waves=self.params['waves'], angle=self.params['amax'])
         self.redraw_profiles()
@@ -381,6 +400,7 @@ class App(Tk):
             self.profile.waves = self.params['waves']
             self.profile.angle = self.params['amax']
             self.redraw_profiles()
+            self.button_export.configure(state=DISABLED)
 
         # Highlight a section after redraw
         if event.keycode == 13 and event.widget in self.entry_b:
@@ -418,6 +438,11 @@ class App(Tk):
         self.calculated_profiles = [ProfileTk(b=b, waves=waves, angle=angle) for angle in angles]
 
         self.redraw_profiles()
+
+        self.button_export.configure(state=NORMAL)
+
+    def _button_export(self, _):
+        pass
 
     def _on_click_on_canvas(self, event):
         overlap_range = 20

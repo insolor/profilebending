@@ -16,7 +16,7 @@ class ProfileTk(Profile):
         canvas.create_arc((center[0]-radius, center[1]-radius, center[0]+radius, center[1]+radius),
                           start=start, extent=extent, style=ARC, **kwargs)
 
-    def canvas_draw(self, canvas, x0=0, y0=0, scale=1, **kwargs):
+    def canvas_draw(self, canvas, x0=0, y0=0, scale=1, add_tags=False, **kwargs):
         self.calculate_profile()
 
         arc_kwargs = dict(kwargs)
@@ -36,14 +36,16 @@ class ProfileTk(Profile):
         # Left edge segment B0 (horizontal)
         if b[0] > 0:
             x1 = x + b[0]
-            canvas.create_line([(x, y), (x1, y)], tag='b0', **kwargs)
+            tag = 'b0' if add_tags else ''
+            canvas.create_line([(x, y), (x1, y)], tag=tag, **kwargs)
             x = x1
         
         for j in range(self.waves):
             # Segment B1 (arc)
             if b[1] > 0:
+                tag = 'b1' if add_tags else ''
                 self.arc(canvas, center=(x, y+r1), radius=r1,
-                         start=90, extent=-self.angle.deg, tag='b1', **arc_kwargs)
+                         start=90, extent=-self.angle.deg, tag=tag, **arc_kwargs)
                 x += w1
                 y += h1
 
@@ -51,7 +53,8 @@ class ProfileTk(Profile):
             if b[2] > 0:
                 x1 = x + w2
                 y1 = y + h2
-                canvas.create_line([(x, y), (x1, y1)], tag='b2', **kwargs)
+                tag = 'b2' if add_tags else ''
+                canvas.create_line([(x, y), (x1, y1)], tag=tag, **kwargs)
                 x = x1
                 y = y1
 
@@ -59,15 +62,17 @@ class ProfileTk(Profile):
             if b[3] > 0:
                 x1 = x + w3
                 y1 = y + h3
+                tag = 'b3' if add_tags else ''
                 self.arc(canvas, center=(x1, y1-r3), radius=r3,
-                         start=270, extent=-self.angle.deg, tag='b3',  **arc_kwargs)
+                         start=270, extent=-self.angle.deg, tag=tag,  **arc_kwargs)
                 x = x1
                 y = y1
 
             # Segment B4 (horizontal)
             if b[4] > 0:
                 x1 = x + b[4]
-                canvas.create_line([(x, y), (x1, y)], tag='b4', **kwargs)
+                tag = 'b4' if add_tags else ''
+                canvas.create_line([(x, y), (x1, y)], tag=tag, **kwargs)
                 x = x1
 
             # Symmetrically against B4 segment
@@ -75,8 +80,9 @@ class ProfileTk(Profile):
             if b[3] > 0:
                 x1 = x + w3
                 y1 = y - h3
+                tag = 'b3' if add_tags else ''
                 self.arc(canvas, center=(x, y-r3), radius=r3,
-                         start=270, extent=self.angle.deg, tag='b3', **arc_kwargs)
+                         start=270, extent=self.angle.deg, tag=tag, **arc_kwargs)
                 x = x1
                 y = y1
 
@@ -84,7 +90,8 @@ class ProfileTk(Profile):
             if b[2] > 0:
                 x1 = x + w2
                 y1 = y - h2
-                canvas.create_line([(x, y), (x1, y1)], tag='b2', **kwargs)
+                tag = 'b2' if add_tags else ''
+                canvas.create_line([(x, y), (x1, y1)], tag=tag, **kwargs)
                 x = x1
                 y = y1
 
@@ -92,21 +99,24 @@ class ProfileTk(Profile):
             if b[1] > 0:
                 x1 = x + w1
                 y1 = y - h1
+                tag = 'b1' if add_tags else ''
                 self.arc(canvas, center=(x1, y1+r1), radius=r1,
-                         start=90, extent=self.angle.deg, tag='b1', **arc_kwargs)
+                         start=90, extent=self.angle.deg, tag=tag, **arc_kwargs)
                 x = x1
                 y = y1
 
             # Segment B5 (horizontal)
             if j < self.waves-1 and b[5] > 0:
                 x1 = x + b[5]
-                canvas.create_line([(x, y), (x1, y)], tag='b5', **kwargs)
+                tag = 'b5' if add_tags else ''
+                canvas.create_line([(x, y), (x1, y)], tag=tag, **kwargs)
                 x = x1
 
         # Right edge segment B0
         if b[0] > 0:
             x1 = x + b[0]
-            canvas.create_line([(x, y), (x1, y)], tag='b0', **kwargs)
+            tag = 'b0' if add_tags else ''
+            canvas.create_line([(x, y), (x1, y)], tag=tag, **kwargs)
 
 
 class LocaleDoubleVar(StringVar):
@@ -120,6 +130,7 @@ class LocaleDoubleVar(StringVar):
 canvas_background = 'gray'
 line_color = 'black'
 line_highlight = 'yellow'
+line_grayed = 'dark gray'
 
 
 def paint_by_tag(canvas, tag, color):
@@ -266,6 +277,8 @@ class App(Tk):
             m=10
         )
 
+        self.calculated_profiles = []
+
         sidebar_frame = Frame(self, width=160)
         canvas_frame = Frame(self, width=self.canvas_width, height=self.canvas_height)
         sidebar_frame.pack(side='left', fill='y')
@@ -276,23 +289,36 @@ class App(Tk):
         self.canvas = init_canvas(canvas_frame)
 
         self.profile = ProfileTk(b=self.params['b'], waves=self.params['waves'], angle=self.params['amax'])
-        self.redraw_profile()
+        self.redraw_profiles()
 
-    def redraw_profile(self):
+    def redraw_profiles(self):
+        if self.calculated_profiles:
+            width = self.calculated_profiles[0].width
+        else:
+            width = self.profile.width
+        height = self.profile.h
+
         self.canvas.delete(ALL)
-        scale = (self.canvas_width-self.border) / self.profile.width
-        if self.profile.h * scale + self.border > self.canvas_height:
-            scale = (self.canvas_height-self.border) / self.profile.h
-        self.baseline = (self.canvas_height + self.profile.h * scale) / 2
-        self.profile.canvas_draw(self.canvas, x0=self.canvas_width/2,
+        scale = (self.canvas_width-self.border) / width
+        if height * scale + self.border > self.canvas_height:
+            scale = (self.canvas_height-self.border) / height
+
+        self.baseline = (self.canvas_height + height * scale) / 2
+        center = self.canvas_width/2
+
+        for profile in self.calculated_profiles:
+            profile.canvas_draw(self.canvas, x0=center, y0=self.baseline, scale=scale, width=1, outline=line_grayed)
+
+        self.profile.canvas_draw(self.canvas, x0=center,
                                  y0=self.baseline,
                                  scale=scale, width=2,
+                                 add_tags=True,
                                  outline=line_color)
 
     def _on_resize_canvas(self, event):
         self.canvas_width = event.width
         self.canvas_height = event.height
-        self.redraw_profile()
+        self.redraw_profiles()
     
     def _on_focus_in_text_box(self, event):
         b_index = self.entry_b.index(event.widget)
@@ -318,25 +344,58 @@ class App(Tk):
                 redraw_profile = True
                 self.params['b'][b_index] = new_val
         elif hasattr(event.widget, 'tag'):
-            if new_val != self.params[event.widget.tag]:
-                redraw_profile = event.widget.tag in {'amax', 'waves'}
-                if event.widget.tag in {'amin', 'amax'}:
-                    self.params[event.widget.tag] = Angle(deg=new_val)
+            tag = event.widget.tag
+            if new_val != self.params[tag] and not(type(self.params[tag]) is Angle and new_val == self.params[tag].deg):
+                redraw_profile = True
+                if type(self.params[tag]) is Angle:
+                    self.params[tag] = Angle(deg=new_val)
                 else:
-                    self.params[event.widget.tag] = new_val
+                    self.params[tag] = new_val
 
         if redraw_profile:
+            self.calculated_profiles = []
             self.profile.b = self.params['b']
             self.profile.waves = self.params['waves']
             self.profile.angle = self.params['amax']
-            self.redraw_profile()
+            self.redraw_profiles()
 
         # Highlight a section after redraw
         if event.keycode == 13 and event.widget in self.entry_b:
             self._on_focus_in_text_box(event)
     
-    def _button_calculate(self, event):
-        pass
+    def _button_calculate(self, _):
+        m = self.params['m']
+        amin = self.params['amin']
+        amax = self.params['amax']
+        b = self.params['b']
+        waves = self.params['waves']
+        eps = 1e-5
+
+        angles = []
+
+        if self.params['amin'].rad == 0:
+            amin = Angle(rad=sys.float_info.epsilon)
+            m += 1  # Не считаем полностью развернутый лист клетью
+        else:
+            angles.append(amin)
+
+        # При минимальном угле альфа получается максимальная ширина и наоборот
+        Wmax = part_width(b, amin.rad)
+        Wmin = part_width(b, amax.rad)
+
+        DW = (Wmax-Wmin)/(m-1)
+        W = Wmax - DW
+
+        a = amin
+        for i in range(m-2):
+            a = Angle(rad=secant_method(lambda x: part_width(b, x)-W, a.rad, amax.rad, eps))
+            W -= DW
+            angles.append(a)
+        # angles.append(amax)
+
+        self.calculated_profiles = [ProfileTk(b=b, waves=waves, angle=angle) for angle in angles]
+
+        self.redraw_profiles()
 
     def _on_click_on_canvas(self, event):
         overlap_range = 10

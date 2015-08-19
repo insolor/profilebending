@@ -29,7 +29,7 @@ class ProfileTk(Profile):
         h, h1, h2, h3, w1, w2, w3, r1, r3 = (x*scale for x in (self.h, self.h1, self.h2, self.h3,
                                                                self.w1, self.w2, self.w3,
                                                                self.r1, self.r3))
-        
+
         x = x0-self.width*scale/2
         y = y0-h
         
@@ -139,6 +139,7 @@ class App(Tk):
         def init_canvas(parent):
             canvas = Canvas(parent, width=640, height=480, bg=canvas_background)
             canvas.pack(side='top', fill='both', expand=1)
+            canvas.bind('<1>', self._on_click_on_canvas)
             return canvas
 
         def init_main_menu():
@@ -171,6 +172,7 @@ class App(Tk):
                 entry.grid(row=row, column=2)
                 entry.bind('<FocusIn>', self._on_focus_in_text_box)
                 entry.bind('<FocusOut>', self._on_focus_out_text_box)
+                entry.bind('<Return>', self._on_focus_out_text_box)
                 self.entry_b.append(entry)
                 row += 1
 
@@ -185,11 +187,12 @@ class App(Tk):
             label.grid(row=row, column=1)
 
             var = IntVar(value=self.waves)
-            entry_waves = Entry(parent, textvariable=var)
-            self.vars[entry_waves] = var
+            self.entry_waves = Entry(parent, textvariable=var)
+            self.vars[self.entry_waves] = var
             self.vars['waves'] = var
-            entry_waves.grid(row=row, column=2)
-            entry_waves.bind('<FocusOut>', self._on_focus_out_text_box)
+            self.entry_waves.grid(row=row, column=2)
+            self.entry_waves.bind('<FocusOut>', self._on_focus_out_text_box)
+            self.entry_waves.bind('<Return>', self._on_focus_out_text_box)
 
             row += 1
 
@@ -207,6 +210,7 @@ class App(Tk):
             self.vars['m'] = var
             self.entry_m.grid(row=row, column=2)
             self.entry_m.bind('<FocusOut>', self._on_focus_out_text_box)
+            self.entry_m.bind('<Return>', self._on_focus_out_text_box)
 
             row += 1
 
@@ -224,6 +228,7 @@ class App(Tk):
             self.vars['amin'] = var
             self.entry_amin.grid(row=row, column=2)
             self.entry_amin.bind('<FocusOut>', self._on_focus_out_text_box)
+            self.entry_amin.bind('<Return>', self._on_focus_out_text_box)
 
             row += 1
 
@@ -241,11 +246,12 @@ class App(Tk):
             self.vars['amax'] = var
             self.entry_amax.grid(row=row, column=2)
             self.entry_amax.bind('<FocusOut>', self._on_focus_out_text_box)
+            self.entry_amax.bind('<Return>', self._on_focus_out_text_box)
 
             row += 1
 
             button = Button(parent, text='Рассчитать')
-            button.bind('<1>', self._button_action)
+            button.bind('<1>', self._button_calculate)
             button.grid(row=row, column=1, columnspan=2)
 
         super().__init__()
@@ -268,25 +274,65 @@ class App(Tk):
         self.profile = ProfileTk(b=self.b, waves=self.waves, angle=self.amax)
         self.profile.canvas_draw(self.canvas, x0=self.canvas_width/2, y0=self.canvas_height/2, scale=20, width=2,
                                  outline=line_color)
-        self.canvas.bind('<1>', self._on_click_on_canvas)
 
     def _on_focus_in_text_box(self, event):
         b_index = self.entry_b.index(event.widget)
         paint_by_tag(self.canvas, 'b%d' % b_index, color=line_highlight)
-    
+
     def _on_focus_out_text_box(self, event):
         if event.widget in self.entry_b:
             b_index = self.entry_b.index(event.widget)
             paint_by_tag(self.canvas, 'b%d' % b_index, color=line_color)
 
+        var = self.vars[event.widget]
+        new_val = None
         try:
-            self.vars[event.widget].get()
+            new_val = var.get()
         except ValueError:
-            # @TODO: Restore original content of the text box
-            messagebox.showerror('Ошибка', 'Неправильный формат числа с плавающей точкой')
+            messagebox.showerror('Ошибка', 'Неправильный формат числа с плавающей запятой')
             event.widget.focus_set()
+            return
+
+        redraw_profile = False
+        if event.widget in self.entry_b:
+            b_index = self.entry_b.index(event.widget)
+            if new_val != self.b[b_index]:
+                redraw_profile = True
+                self.b[b_index] = new_val
+
+        if event.widget is self.entry_waves:
+            if new_val != self.waves:
+                redraw_profile = True
+                self.waves = new_val
+
+        if event.widget is self.entry_m:
+            if new_val != self.m:
+                redraw_profile = False
+                self.m = new_val
+
+        if event.widget is self.entry_amin:
+            if new_val != self.amin.deg:
+                redraw_profile = False
+                self.amin = Angle(deg=new_val)
+
+        if event.widget is self.entry_amax:
+            if new_val != self.amax.deg:
+                redraw_profile = True
+                self.amax = Angle(deg=new_val)
+
+        if redraw_profile:
+            self.canvas.delete(ALL)
+            self.profile.b = self.b
+            self.profile.waves = self.waves
+            self.profile.angle = self.amax
+            self.profile.canvas_draw(self.canvas, x0=self.canvas_width/2, y0=self.canvas_height/2, scale=20, width=2,
+                                     outline=line_color)
+
+        # Highlight a section after redraw
+        if event.keycode == 13:
+            self._on_focus_in_text_box(event)
     
-    def _button_action(self, event):
+    def _button_calculate(self, event):
         pass
 
     def _on_click_on_canvas(self, event):

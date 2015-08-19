@@ -338,19 +338,40 @@ class App(Tk):
             return
 
         redraw_profile = False
-        if event.widget in self.entry_b:
-            b_index = self.entry_b.index(event.widget)
-            if new_val != self.params['b'][b_index]:
-                redraw_profile = True
-                self.params['b'][b_index] = new_val
-        elif hasattr(event.widget, 'tag'):
-            tag = event.widget.tag
-            if new_val != self.params[tag] and not(type(self.params[tag]) is Angle and new_val == self.params[tag].deg):
-                redraw_profile = True
-                if type(self.params[tag]) is Angle:
-                    self.params[tag] = Angle(deg=new_val)
-                else:
-                    self.params[tag] = new_val
+        try:
+            if event.widget in self.entry_b:
+                b_index = self.entry_b.index(event.widget)
+                if new_val < 0:
+                    raise ValueError('Длина участка не может быть отрицательной.')
+
+                if new_val != self.params['b'][b_index]:
+                    redraw_profile = True
+                    self.params['b'][b_index] = new_val
+            elif hasattr(event.widget, 'tag'):
+                tag = event.widget.tag
+                if (new_val != self.params[tag] and
+                        not(type(self.params[tag]) is Angle and new_val == self.params[tag].deg)):
+                    redraw_profile = True
+                    if type(self.params[tag]) is Angle:
+                        if not (0 <= new_val <= 90):
+                            raise ValueError('Значение угла должно быть в диапазоне от 0 до 90 градусов.')
+                        elif (tag == 'amin' and new_val > self.params['amax'].deg or
+                              tag == 'amax' and new_val < self.params['amin'].deg):
+                            raise ValueError('Значение начального угла должно быть меньше значения конечного угла.')
+
+                        self.params[tag] = Angle(deg=new_val)
+                    else:
+                        if tag == 'waves' and type(new_val) is not int or new_val <= 0:
+                            raise ValueError('Количество волн должно быть целым числом больше нуля.')
+                        elif tag == 'm' and type(new_val) is not int or new_val <= 1:
+                            raise ValueError('Количество клетей должно быть целым числом больше единицы.')
+
+                        self.params[tag] = new_val
+
+        except ValueError as err:
+            messagebox.showerror('Ошибка', err)
+            event.widget.focus_set()
+            return
 
         if redraw_profile:
             self.calculated_profiles = []
@@ -380,18 +401,17 @@ class App(Tk):
             angles.append(amin)
 
         # При минимальном угле альфа получается максимальная ширина и наоборот
-        Wmax = part_width(b, amin.rad)
-        Wmin = part_width(b, amax.rad)
+        wmax = part_width(b, amin.rad)
+        wmin = part_width(b, amax.rad)
 
-        DW = (Wmax-Wmin)/(m-1)
-        W = Wmax - DW
+        dw = (wmax-wmin)/(m-1)
+        w = wmax - dw
 
         a = amin
         for i in range(m-2):
-            a = Angle(rad=secant_method(lambda x: part_width(b, x)-W, a.rad, amax.rad, eps))
-            W -= DW
+            a = Angle(rad=secant_method(lambda x: part_width(b, x)-w, a.rad, amax.rad, eps))
+            w -= dw
             angles.append(a)
-        # angles.append(amax)
 
         self.calculated_profiles = [ProfileTk(b=b, waves=waves, angle=angle) for angle in angles]
 
@@ -406,8 +426,10 @@ class App(Tk):
             tags = list(self.canvas.gettags(closest_item))
             if CURRENT in tags:
                 tags.remove(CURRENT)
-            index = int(tags[0][1])
-            self.entry_b[index].focus_set()
+
+            if tags:
+                index = int(tags[0][1])
+                self.entry_b[index].focus_set()
 
 app = App()
 app.mainloop()

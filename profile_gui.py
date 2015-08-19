@@ -27,7 +27,7 @@ class ProfileTk(Profile):
 
         # Scale profile parameters
         b = [x*scale for x in self.b]
-        h, h1, h2, h3, w1, w2, w3, r1, r3 = (x*scale for x in (self.h, self.h1, self.h2, self.h3,
+        h, h1, h2, h3, w1, w2, w3, r1, r3 = (x*scale for x in (self.height, self.h1, self.h2, self.h3,
                                                                self.w1, self.w2, self.w3,
                                                                self.r1, self.r3))
 
@@ -155,7 +155,7 @@ class App(Tk):
         def init_main_menu():
             main_menu = Menu(self)
             self.config(menu=main_menu)
-            file_menu = Menu(main_menu)
+            file_menu = Menu(main_menu, tearoff=False)
             main_menu.add_cascade(label="File", menu=file_menu)
             # file_menu.add_command(label="Open", command=self.show_img)
             # file_menu.add_separator()
@@ -269,14 +269,33 @@ class App(Tk):
             button.grid(row=row, column=1, columnspan=2)
             self.button_export = button
 
-        def init_console(parent):
+        def init_console(parent, height):
             scrollbar = Scrollbar(parent)
             scrollbar.pack(side='right', fill='y')
-            text_box = Text(parent, height=5)
-            text_box.pack(side='left', fill='both', expand=1)
-            scrollbar['command'] = text_box.yview
-            text_box['yscrollcommand'] = scrollbar.set
-            return text_box
+            console = Text(parent, height=height)
+            console.pack(side='left', fill='both', expand=1)
+            scrollbar['command'] = console.yview
+            console['yscrollcommand'] = scrollbar.set
+
+            def copy_selection():
+                try:
+                    text = console.selection_get()
+                except TclError:
+                    return
+
+                self.clipboard_clear()
+                self.clipboard_append(text)
+
+            def show_context_menu(event):
+                 pos_x = console.winfo_rootx() + event.x
+                 pos_y = console.winfo_rooty() + event.y
+                 context_menu.tk_popup(pos_x, pos_y)
+
+            context_menu = Menu(self, tearoff=False)
+            context_menu.add_command(label="Копировать", command=copy_selection)
+            console.bind("<3>", show_context_menu)
+
+            return console
 
         super().__init__()
 
@@ -306,17 +325,23 @@ class App(Tk):
         init_main_menu()
         init_controls(sidebar_frame)
         self.canvas = init_canvas(canvas_frame)
-        self.console = init_console(console_frame)
+        self.console = init_console(console_frame, height=10)
 
         self.profile = ProfileTk(b=self.params['b'], waves=self.params['waves'], angle=self.params['amax'])
         self.redraw_profiles()
+
+    def cls(self):
+        self.console.delete('0.0', END)
+
+    def print(self, text='', end='\n'):
+        self.console.insert(END, text+end)
 
     def redraw_profiles(self):
         if self.calculated_profiles:
             width = self.calculated_profiles[0].width
         else:
             width = self.profile.width
-        height = self.profile.h
+        height = self.profile.height
 
         self.canvas.delete(ALL)
         scale = (self.canvas_width-self.border) / width
@@ -334,6 +359,23 @@ class App(Tk):
                                  scale=scale, width=2,
                                  add_tags=True,
                                  outline=line_color)
+
+        self.cls()
+        self.print('Ширина профиля: %.2f' % self.profile.width)
+        self.print('Высота по средней линии: %.2f' % self.profile.height)
+        self.print('Ширина развертки: %.2f' % self.profile.flat_width)
+
+        if self.calculated_profiles:
+            profiles = list(self.calculated_profiles)
+            profiles.append(self.profile)
+            for i, profile in enumerate(profiles):
+                self.print()
+                self.print('Клеть №%d' % (i+1))
+                self.print('Ag = %-6.2f' % profile.angle.deg)
+                self.print('R1 = %-6.2f    R3 = %-6.2f' % (profile.r1, profile.r3))
+                self.print('H  = %-6.2f    H1 = %-6.2f    H2 = %-6.2f    H3 = %-6.2f' %
+                           (profile.height, profile.h1, profile.h2, profile.h3))
+                self.print('W1 = %-6.2f    W2 = %-6.2f    W3 = %-6.2f' % (profile.w1, profile.w2, profile.w3))
 
     def _on_resize_canvas(self, event):
         self.canvas_width = event.width
@@ -456,7 +498,6 @@ class App(Tk):
                 filename += '.dxf'
 
             d.saveas(filename)
-
 
     def _on_click_on_canvas(self, event):
         overlap_range = 20

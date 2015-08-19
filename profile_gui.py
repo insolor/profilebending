@@ -133,9 +133,6 @@ def paint_by_tag(canvas, tag, color):
 
 class App(Tk):
     def __init__(self):
-        self.canvas_width = 640
-        self.canvas_height = 480
-
         def init_canvas(parent):
             canvas = Canvas(parent, width=640, height=480, bg=canvas_background)
             canvas.pack(side='top', fill='both', expand=1)
@@ -255,7 +252,12 @@ class App(Tk):
             button.grid(row=row, column=1, columnspan=2)
 
         super().__init__()
-        
+
+        self.canvas_width = 640
+        self.canvas_height = 480
+        self.baseline = self.canvas_height / 2
+        self.border = 40
+
         self.params = dict(
             b=[1.0 for _ in range(6)],
             waves=3,
@@ -263,7 +265,7 @@ class App(Tk):
             amax=Angle(deg=60),
             m=10
         )
-        
+
         sidebar_frame = Frame(self, width=160)
         canvas_frame = Frame(self, width=self.canvas_width, height=self.canvas_height)
         sidebar_frame.pack(side='left', fill='y')
@@ -278,8 +280,13 @@ class App(Tk):
 
     def redraw_profile(self):
         self.canvas.delete(ALL)
-        self.profile.canvas_draw(self.canvas, x0=self.canvas_width/2, y0=self.canvas_height/2,
-                                 scale=(self.canvas_width-40) / self.profile.width, width=2,
+        scale = (self.canvas_width-self.border) / self.profile.width
+        if self.profile.h * scale + self.border > self.canvas_height:
+            scale = (self.canvas_height-self.border) / self.profile.h
+        self.baseline = (self.canvas_height + self.profile.h * scale) / 2
+        self.profile.canvas_draw(self.canvas, x0=self.canvas_width/2,
+                                 y0=self.baseline,
+                                 scale=scale, width=2,
                                  outline=line_color)
 
     def _on_resize_canvas(self, event):

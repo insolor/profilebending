@@ -156,10 +156,12 @@ class App(Tk):
             main_menu = Menu(self)
             self.config(menu=main_menu)
             file_menu = Menu(main_menu, tearoff=False)
-            main_menu.add_cascade(label="File", menu=file_menu)
-            # file_menu.add_command(label="Open", command=self.show_img)
-            # file_menu.add_separator()
-            file_menu.add_command(label="Exit", command=self.destroy)
+            file_menu.add_command(label="Выход", command=self.destroy)
+            help_menu = Menu(main_menu, tearoff=False)
+            help_menu.add_command(label="О программе",
+                                  command=lambda: messagebox.showinfo('О программе...', 'Калибровки'))
+            main_menu.add_cascade(label="Файл", menu=file_menu)
+            main_menu.add_cascade(label="Справка", menu=help_menu)
 
         def init_controls(parent):
             # Create labels and text boxes for b-parameters
@@ -173,7 +175,7 @@ class App(Tk):
 
             for i in range(6):
                 label = Label(parent, text='B%d =' % i)
-                label.grid(row=row, column=1)
+                label.grid(row=row, column=1, pady=2, sticky=E)
 
                 var = LocaleDoubleVar(value=self.params['b'][i])
                 entry = Entry(parent, textvariable=var)
@@ -193,7 +195,7 @@ class App(Tk):
             row += 1
 
             label = Label(parent, text='N =')
-            label.grid(row=row, column=1)
+            label.grid(row=row, column=1, sticky=E)
 
             var = IntVar(value=self.params['waves'])
             self.entry_waves = Entry(parent, textvariable=var)
@@ -211,7 +213,7 @@ class App(Tk):
             row += 1
 
             label = Label(parent, text='M =')
-            label.grid(row=row, column=1)
+            label.grid(row=row, column=1, sticky=E)
 
             var = IntVar(value=self.params['m'])
             self.entry_m = Entry(parent, textvariable=var)
@@ -229,7 +231,7 @@ class App(Tk):
             row += 1
 
             label = Label(parent, text='Amin =')
-            label.grid(row=row, column=1)
+            label.grid(row=row, column=1, sticky=E)
 
             var = LocaleDoubleVar(value=self.params['amin'].deg)
             self.entry_amin = Entry(parent, textvariable=var)
@@ -247,7 +249,7 @@ class App(Tk):
             row += 1
 
             label = Label(parent, text='Amax =')
-            label.grid(row=row, column=1)
+            label.grid(row=row, column=1, sticky=E)
 
             var = LocaleDoubleVar(value=self.params['amax'].deg)
             self.entry_amax = Entry(parent, textvariable=var)
@@ -261,7 +263,7 @@ class App(Tk):
 
             button = Button(parent, text='Рассчитать')
             button.bind('<1>', self.calculate)
-            button.grid(row=row, column=1, columnspan=2)
+            button.grid(row=row, column=1, columnspan=2, pady=4)
 
             row += 1
             button = Button(parent, text='Экспорт в файл dxf', state=DISABLED)
@@ -272,14 +274,14 @@ class App(Tk):
         def init_console(parent, height):
             scrollbar = Scrollbar(parent)
             scrollbar.pack(side='right', fill='y')
-            console = Text(parent, height=height)
+            console = Text(parent, height=height, state=DISABLED)
             console.pack(side='left', fill='both', expand=1)
             scrollbar['command'] = console.yview
             console['yscrollcommand'] = scrollbar.set
 
             def copy_selection():
                 try:
-                    text = console.selection_get()
+                    text = console.get('sel.first', 'sel.last')
                 except TclError:
                     return
 
@@ -302,7 +304,7 @@ class App(Tk):
         self.canvas_width = 640
         self.canvas_height = 360
         self.baseline = self.canvas_height / 2
-        self.border = 40
+        self.border = 20
 
         self.params = dict(
             b=[10.0, 1.5, 10.0, 1.5, 10.0, 10.0],
@@ -318,8 +320,8 @@ class App(Tk):
         canvas_frame = Frame(self, width=self.canvas_width, height=self.canvas_height)
         console_frame = Frame(self)
 
-        console_frame.pack(side='bottom', fill='x')
         sidebar_frame.pack(side='left', fill='y')
+        console_frame.pack(side='bottom', fill='x')
         canvas_frame.pack(side='right', fill='both', expand=1)
         
         init_main_menu()
@@ -331,10 +333,14 @@ class App(Tk):
         self.redraw_profiles()
 
     def cls(self):
-        self.console.delete('0.0', END)
+        self.console.configure(state=NORMAL)
+        self.console.delete(0.0, END)
+        self.console.configure(state=DISABLED)
 
     def print(self, text='', end='\n'):
+        self.console.configure(state=NORMAL)
         self.console.insert(END, text+end)
+        self.console.configure(state=DISABLED)
 
     def redraw_profiles(self):
         if self.calculated_profiles:
@@ -500,7 +506,7 @@ class App(Tk):
             d.saveas(filename)
 
     def _on_click_on_canvas(self, event):
-        overlap_range = 20
+        overlap_range = 40
         overlap_items = self.canvas.find_overlapping(event.x-overlap_range, event.y-overlap_range,
                                                      event.x+overlap_range, event.y+overlap_range)
         if overlap_items:

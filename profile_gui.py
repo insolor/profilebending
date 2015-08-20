@@ -143,6 +143,15 @@ def paint_by_tag(canvas, tag, color):
             canvas.itemconfig(item, outline=color)
 
 
+class Params:
+    def __init__(self, b, waves, amin, amax, m):
+        self.b = b
+        self.waves = waves
+        self.amin = amin
+        self.amax = amax
+        self.m = m
+
+
 class App(Tk):
     def __init__(self):
         def init_canvas(parent):
@@ -177,7 +186,7 @@ class App(Tk):
                 label = Label(parent, text='B%d =' % i)
                 label.grid(row=row, column=1, pady=2, sticky=E)
 
-                var = LocaleDoubleVar(value=self.params['b'][i])
+                var = LocaleDoubleVar(value=self.params.b[i])
                 entry = Entry(parent, textvariable=var)
                 self.vars[entry] = var
                 entry.grid(row=row, column=2)
@@ -197,7 +206,7 @@ class App(Tk):
             label = Label(parent, text='N =')
             label.grid(row=row, column=1, sticky=E)
 
-            var = IntVar(value=self.params['waves'])
+            var = IntVar(value=self.params.waves)
             self.entry_waves = Entry(parent, textvariable=var)
             self.vars[self.entry_waves] = var
             self.entry_waves.grid(row=row, column=2)
@@ -215,7 +224,7 @@ class App(Tk):
             label = Label(parent, text='M =')
             label.grid(row=row, column=1, sticky=E)
 
-            var = IntVar(value=self.params['m'])
+            var = IntVar(value=self.params.m)
             self.entry_m = Entry(parent, textvariable=var)
             self.vars[self.entry_m] = var
             self.entry_m.grid(row=row, column=2)
@@ -233,7 +242,7 @@ class App(Tk):
             label = Label(parent, text='Amin =')
             label.grid(row=row, column=1, sticky=E)
 
-            var = LocaleDoubleVar(value=self.params['amin'].deg)
+            var = LocaleDoubleVar(value=self.params.amin.deg)
             self.entry_amin = Entry(parent, textvariable=var)
             self.vars[self.entry_amin] = var
             self.entry_amin.grid(row=row, column=2)
@@ -251,7 +260,7 @@ class App(Tk):
             label = Label(parent, text='Amax =')
             label.grid(row=row, column=1, sticky=E)
 
-            var = LocaleDoubleVar(value=self.params['amax'].deg)
+            var = LocaleDoubleVar(value=self.params.amax.deg)
             self.entry_amax = Entry(parent, textvariable=var)
             self.vars[self.entry_amax] = var
             self.entry_amax.grid(row=row, column=2)
@@ -306,8 +315,8 @@ class App(Tk):
         self.baseline = self.canvas_height / 2
         self.border = 20
 
-        self.params = dict(
-            b=[10.0, 1.5, 10.0, 1.5, 10.0, 10.0],
+        self.params = Params(
+            b=[10.0, 1.5, 10.0, 1.5, 10.0, 40.0],
             waves=3,
             amin=Angle(deg=0),
             amax=Angle(deg=60),
@@ -329,7 +338,7 @@ class App(Tk):
         self.canvas = init_canvas(canvas_frame)
         self.console = init_console(console_frame, height=10)
 
-        self.profile = ProfileTk(b=self.params['b'], waves=self.params['waves'], angle=self.params['amax'])
+        self.profile = ProfileTk(b=self.params.b, waves=self.params.waves, angle=self.params.amax)
         self.redraw_profiles()
 
     def cls(self):
@@ -413,29 +422,31 @@ class App(Tk):
                 if new_val < 0:
                     raise ValueError('Длина участка не может быть отрицательной.')
 
-                if new_val != self.params['b'][b_index]:
+                if new_val != self.params.b[b_index]:
                     redraw_profile = True
-                    self.params['b'][b_index] = new_val
+                    self.params.b[b_index] = new_val
             elif hasattr(event.widget, 'tag'):
                 tag = event.widget.tag
-                if (new_val != self.params[tag] and
-                        not(type(self.params[tag]) is Angle and new_val == self.params[tag].deg)):
-                    redraw_profile = True
-                    if type(self.params[tag]) is Angle:
-                        if not (0 <= new_val <= 90):
-                            raise ValueError('Значение угла должно быть в диапазоне от 0 до 90 градусов.')
-                        elif (tag == 'amin' and new_val > self.params['amax'].deg or
-                              tag == 'amax' and new_val < self.params['amin'].deg):
-                            raise ValueError('Значение начального угла должно быть меньше значения конечного угла.')
+                if hasattr(self.params, tag):
+                    old_val = getattr(self.params, tag)
+                    if (new_val != old_val and
+                            not(type(old_val) is Angle and new_val == old_val.deg)):
+                        redraw_profile = True
+                        if type(old_val) is Angle:
+                            if not (0 <= new_val <= 90):
+                                raise ValueError('Значение угла должно быть в диапазоне от 0 до 90 градусов.')
+                            elif (tag == 'amin' and new_val > self.params.amax.deg or
+                                  tag == 'amax' and new_val < self.params.amin.deg):
+                                raise ValueError('Значение начального угла должно быть меньше значения конечного угла.')
 
-                        self.params[tag] = Angle(deg=new_val)
-                    else:
-                        if tag == 'waves' and (type(new_val) is not int or new_val <= 0):
-                            raise ValueError('Количество волн должно быть целым числом больше нуля.')
-                        elif tag == 'm' and (type(new_val) is not int or new_val <= 1):
-                            raise ValueError('Количество клетей должно быть целым числом больше единицы.')
+                            setattr(self.params, tag, Angle(deg=new_val))
+                        else:
+                            if tag == 'waves' and (type(new_val) is not int or new_val <= 0):
+                                raise ValueError('Количество волн должно быть целым числом больше нуля.')
+                            elif tag == 'm' and (type(new_val) is not int or new_val <= 1):
+                                raise ValueError('Количество клетей должно быть целым числом больше единицы.')
 
-                        self.params[tag] = new_val
+                            setattr(self.params, tag, new_val)
 
         except ValueError as err:
             messagebox.showerror('Ошибка', err)
@@ -445,9 +456,9 @@ class App(Tk):
 
         if redraw_profile:
             self.calculated_profiles = []
-            self.profile.b = self.params['b']
-            self.profile.waves = self.params['waves']
-            self.profile.angle = self.params['amax']
+            self.profile.b = self.params.b
+            self.profile.waves = self.params.waves
+            self.profile.angle = self.params.amax
             self.redraw_profiles()
             self.button_export.configure(state=DISABLED)
 
@@ -456,16 +467,16 @@ class App(Tk):
             self._on_focus_in_text_box(event)
     
     def calculate(self, _):
-        m = self.params['m']
-        amin = self.params['amin']
-        amax = self.params['amax']
-        b = self.params['b']
-        waves = self.params['waves']
+        m = self.params.m
+        amin = self.params.amin
+        amax = self.params.amax
+        b = self.params.b
+        waves = self.params.waves
         eps = 1e-5
 
         angles = []
 
-        if self.params['amin'].rad == 0:
+        if self.params.amin.rad == 0:
             amin = Angle(rad=sys.float_info.epsilon)
             m += 1  # Не считаем полностью развернутый лист клетью
         else:

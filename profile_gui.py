@@ -430,9 +430,9 @@ class App(Tk):
 
                         self.params[tag] = Angle(deg=new_val)
                     else:
-                        if tag == 'waves' and type(new_val) is not int or new_val <= 0:
+                        if tag == 'waves' and (type(new_val) is not int or new_val <= 0):
                             raise ValueError('Количество волн должно быть целым числом больше нуля.')
-                        elif tag == 'm' and type(new_val) is not int or new_val <= 1:
+                        elif tag == 'm' and (type(new_val) is not int or new_val <= 1):
                             raise ValueError('Количество клетей должно быть целым числом больше единицы.')
 
                         self.params[tag] = new_val

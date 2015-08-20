@@ -414,11 +414,12 @@ class App(Tk):
             event.widget.focus_set()
             event.widget.selection_range(0, END)
             return
-
+        old_val = None
         redraw_profile = False
         try:
             if event.widget in self.entry_b:
                 b_index = self.entry_b.index(event.widget)
+                old_val = self.params.b[b_index]
                 if new_val < 0:
                     raise ValueError('Длина участка не может быть отрицательной.')
 
@@ -433,6 +434,7 @@ class App(Tk):
                             not(type(old_val) is Angle and new_val == old_val.deg)):
                         redraw_profile = True
                         if type(old_val) is Angle:
+                            old_val = old_val.deg
                             if not (0 <= new_val <= 90):
                                 raise ValueError('Значение угла должно быть в диапазоне от 0 до 90 градусов.')
                             elif (tag == 'amin' and new_val > self.params.amax.deg or
@@ -450,6 +452,8 @@ class App(Tk):
 
         except ValueError as err:
             messagebox.showerror('Ошибка', err)
+            if old_val is not None:
+                var.set(old_val)
             event.widget.focus_set()
             event.widget.selection_range(0, END)
             return

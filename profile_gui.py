@@ -298,9 +298,9 @@ class App(Tk):
                 self.clipboard_append(text)
 
             def show_context_menu(event):
-                 pos_x = console.winfo_rootx() + event.x
-                 pos_y = console.winfo_rooty() + event.y
-                 context_menu.tk_popup(pos_x, pos_y)
+                pos_x = console.winfo_rootx() + event.x
+                pos_y = console.winfo_rooty() + event.y
+                context_menu.tk_popup(pos_x, pos_y)
 
             context_menu = Menu(self, tearoff=False)
             context_menu.add_command(label="Копировать", command=copy_selection)
@@ -386,7 +386,7 @@ class App(Tk):
             for i, profile in enumerate(profiles):
                 self.print()
                 self.print('Клеть №%d' % (i+1))
-                self.print('Ag = %-6.2f' % profile.angle.deg)
+                self.print('Угол гибки: %-6.2f градусов' % profile.angle.deg)
                 self.print('R1 = %-6.2f    R3 = %-6.2f' % (profile.r1, profile.r3))
                 self.print('H  = %-6.2f    H1 = %-6.2f    H2 = %-6.2f    H3 = %-6.2f' %
                            (profile.height, profile.h1, profile.h2, profile.h3))

@@ -97,17 +97,12 @@ class Profile(object):
     @property
     def width(self):
         self.calculate_profile()
-        width = 2*self.b[0]+(2*self.w1+2*self.w2+2*self.w3+self.b[4])*self.waves
-        if self.waves > 1:
-            width += self.b[5]*(self.waves-1)
-        return width
+        return 2*self.b[0]+(2*self.w1+2*self.w2+2*self.w3+self.b[4])*self.waves + self.b[5]*(self.waves-1)
 
     @property
     def flat_width(self):
-        evolvent = 2*self.b[0]+(2*self.b[1]+2*self.b[2]+2*self.b[3]+self.b[4])*self.waves
-        if self.waves > 1:
-            evolvent += self.b[5]*(self.waves-1)
-        return evolvent
+        self.calculate_profile()
+        return 2*self.b[0]+(2*self.b[1]+2*self.b[2]+2*self.b[3]+self.b[4])*self.waves + self.b[5]*(self.waves-1)
 
     def dxf_draw(self, **common):
         d = []

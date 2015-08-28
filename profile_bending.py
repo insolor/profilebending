@@ -22,7 +22,7 @@ def input_float(prompt='', cond=None, msg_on_false_cond=''):
                 return ret
 
 
-def part_width(b, alpha):
+def partial_width(b, alpha):
     return (b[1]+b[3])/alpha*sin(alpha)+b[2]*cos(alpha)
 
 
@@ -220,15 +220,15 @@ def main():
         angles.append(amin)
     
     # При минимальном угле альфа получается максимальная ширина и наоборот
-    Wmax = part_width(b, amin.rad)
-    Wmin = part_width(b, amax.rad)
+    Wmax = partial_width(b, amin.rad)
+    Wmin = partial_width(b, amax.rad)
 
     DW = (Wmax-Wmin)/(M-1)
     W = Wmax - DW
 
     a = amin
     for i in range(M-2):
-        a = Angle(rad=secant_method(lambda x: part_width(b, x)-W, a.rad, amax.rad, eps))
+        a = Angle(rad=secant_method(lambda x: partial_width(b, x)-W, a.rad, amax.rad, eps))
         W -= DW
         angles.append(a)
     angles.append(amax)

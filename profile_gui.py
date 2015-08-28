@@ -488,15 +488,15 @@ class App(Tk):
             angles.append(amin)
 
         # При минимальном угле альфа получается максимальная ширина и наоборот
-        wmax = part_width(b, amin.rad)
-        wmin = part_width(b, amax.rad)
+        wmax = partial_width(b, amin.rad)
+        wmin = partial_width(b, amax.rad)
 
         dw = (wmax-wmin)/(m-1)
         w = wmax - dw
 
         a = amin
         for i in range(m-2):
-            a = Angle(rad=secant_method(lambda x: part_width(b, x)-w, a.rad, amax.rad, eps))
+            a = Angle(rad=secant_method(lambda x: partial_width(b, x)-w, a.rad, amax.rad, eps))
             w -= dw
             angles.append(a)
 
